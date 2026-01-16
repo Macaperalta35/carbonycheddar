@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🍔 Carbon & Cheddar - Login</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .login-container {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .login-container h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-top: 20px;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+        }
+
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid #c33;
+            display: none;
+        }
+
+        .demo-info {
+            background: #f0f4ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            border-left: 4px solid #667eea;
+        }
+
+        .demo-info p {
+            margin: 5px 0;
+            color: #333;
+            font-size: 0.9em;
+        }
+
+        .demo-info strong {
+            color: #667eea;
+        }
+
+        .demo-info code {
+            background: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            color: #667eea;
+        }
+
+        .users-list {
+            margin-top: 20px;
+            padding: 15px;
+            background: #fffef0;
+            border-radius: 8px;
+            border-left: 4px solid #ff9800;
+        }
+
+        .users-list h4 {
+            margin-bottom: 10px;
+            color: #ff9800;
+        }
+
+        .user-item {
+            padding: 8px;
+            margin: 5px 0;
+            background: white;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+
+        .user-item .role {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 0.8em;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .role.admin {
+            background: #c33;
+            color: white;
+        }
+
+        .role.vendedor {
+            background: #667eea;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h1>🍔 Carbon & Cheddar</h1>
+        <p class="subtitle">Sistema de Ventas</p>
+
+        <div id="errorMessage" class="error-message"></div>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label>Usuario</label>
+                <input type="text" id="username" placeholder="Ingrese usuario" required autofocus>
+            </div>
+
+            <div class="form-group">
+                <label>Contraseña</label>
+                <input type="password" id="password" placeholder="Ingrese contraseña" required>
+            </div>
+
+            <button type="submit" class="btn-primary">Ingresar</button>
+        </form>
+
+        <div class="users-list">
+            <h4>👥 Usuarios Disponibles:</h4>
+            <div class="user-item">
+                Usuario: <code>admin</code> | Contraseña: <code>admin123</code>
+                <span class="role admin">ADMINISTRADOR</span>
+            </div>
+            <div class="user-item">
+                Usuario: <code>vendedor</code> | Contraseña: <code>vendedor123</code>
+                <span class="role vendedor">VENDEDOR</span>
+            </div>
+        </div>
+
+        <div class="demo-info">
+            <p><strong>ℹ️ Diferencias de permisos:</strong></p>
+            <ul style="margin-left: 15px; margin-top: 10px;">
+                <li><strong>Admin:</strong> Crear, editar, eliminar productos y gestionar inventario</li>
+                <li><strong>Vendedor:</strong> Solo puede registrar ventas</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8000/api';
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const errorDiv = document.getElementById('errorMessage');
+
+            try {
+                const response = await fetch(`${API_URL}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Guardar datos de sesión
+                    sessionStorage.setItem('username', data.username);
+                    sessionStorage.setItem('is_admin', String(data.is_admin));
+                    sessionStorage.setItem('token', data.token);
+
+                    // Redirigir a dashboard
+                    window.location.href = 'dashboard.html';
+                } else {
+                    errorDiv.textContent = data.error || 'Credenciales inválidas';
+                    errorDiv.style.display = 'block';
+                }
+            } catch (error) {
+                errorDiv.textContent = 'Error de conexión: ' + error.message;
+                errorDiv.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>

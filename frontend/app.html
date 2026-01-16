@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🍔 Carbon & Cheddar - Sistema de Ventas</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .app-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Login */
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .login-card {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .login-card h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-top: 20px;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+        }
+
+        .demo-info {
+            background: #f0f4ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            border-left: 4px solid #667eea;
+        }
+
+        .demo-info p {
+            margin: 5px 0;
+            color: #333;
+            font-size: 0.9em;
+        }
+
+        .demo-info code {
+            background: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            color: #667eea;
+        }
+
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid #c33;
+        }
+
+        .success-message {
+            background: #efe;
+            color: #3c3;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid #3c3;
+        }
+
+        /* Main App */
+        .app-wrapper {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 2em;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .btn-logout {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 8px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        .btn-logout:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: white;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 30px;
+            padding: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .products-section h2,
+        .cart-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .product-card {
+            background: #f9f9f9;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .product-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.2);
+            transform: translateY(-5px);
+        }
+
+        .product-icon {
+            font-size: 3em;
+            margin-bottom: 10px;
+        }
+
+        .product-card h3 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .price {
+            font-size: 1.5em;
+            color: #667eea;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .btn-add {
+            width: 100%;
+            padding: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+
+        .btn-add:hover {
+            transform: scale(1.05);
+        }
+
+        /* Carrito */
+        .cart-section {
+            background: #f9f9f9;
+            border-radius: 12px;
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+
+        .empty-cart {
+            text-align: center;
+            color: #999;
+            padding: 30px 0;
+        }
+
+        .loading {
+            text-align: center;
+            color: #667eea;
+            padding: 20px;
+        }
+
+        .cart-items {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .cart-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 4px solid #667eea;
+            gap: 10px;
+        }
+
+        .item-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .item-info h4 {
+            margin: 0 0 5px 0;
+            color: #333;
+            font-size: 0.9em;
+        }
+
+        .item-info p {
+            margin: 0;
+            color: #666;
+            font-size: 0.8em;
+        }
+
+        .btn-remove {
+            background: #fee;
+            color: #c33;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            flex-shrink: 0;
+        }
+
+        .btn-remove:hover {
+            background: #c33;
+            color: white;
+        }
+
+        .cart-summary {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border-top: 2px solid #e0e0e0;
+            margin-bottom: 15px;
+        }
+
+        .cart-summary h3 {
+            margin: 0;
+            color: #667eea;
+            text-align: right;
+        }
+
+        .btn-checkout {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .btn-checkout:hover {
+            transform: scale(1.05);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .header-content {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+
+            .products-grid {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            }
+
+            .cart-section {
+                position: static;
+            }
+
+            .header h1 {
+                font-size: 1.5em;
+            }
+
+            .user-info {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+
+    <script>
+        const API_URL = 'http://localhost:5000';
+
+        let appState = {
+            isLoggedIn: false,
+            username: '',
+            products: [],
+            cart: [],
+            loading: true,
+            error: null
+        };
+
+        function showApp() {
+            const app = document.getElementById('app');
+            
+            if (!appState.isLoggedIn) {
+                app.innerHTML = `
+                    <div class="login-container">
+                        <div class="login-card">
+                            <h1>🍔 Carbon & Cheddar</h1>
+                            <p class="subtitle">Sistema de Ventas</p>
+                            
+                            <form id="loginForm">
+                                <div class="form-group">
+                                    <label>Usuario</label>
+                                    <input type="text" id="username" placeholder="Ingrese usuario" required>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label>Contraseña</label>
+                                    <input type="password" id="password" placeholder="Ingrese contraseña" required>
+                                </div>
+
+                                ${appState.error ? `<div class="error-message">${appState.error}</div>` : ''}
+                                
+                                <button type="submit" class="btn-primary">Ingresar</button>
+                                
+                                <div class="demo-info">
+                                    <p><strong>Demo:</strong></p>
+                                    <p>Usuario: <code>admin</code></p>
+                                    <p>Contraseña: <code>admin123</code></p>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                `;
+
+                document.getElementById('loginForm').addEventListener('submit', handleLogin);
+            } else {
+                app.innerHTML = `
+                    <div class="app-wrapper">
+                        <header class="header">
+                            <div class="header-content">
+                                <h1>🍔 Carbon & Cheddar</h1>
+                                <div class="user-info">
+                                    <span>Bienvenido, <strong>${appState.username}</strong></span>
+                                    <button class="btn-logout" onclick="handleLogout()">Cerrar Sesión</button>
+                                </div>
+                            </div>
+                        </header>
+
+                        <div class="main-content">
+                            <section class="products-section">
+                                <h2>📋 Nuestros Productos</h2>
+                                
+                                ${appState.error ? `<div class="error-message">${appState.error}</div>` : ''}
+                                
+                                ${appState.loading ? '<p class="loading">⏳ Cargando productos...</p>' : ''}
+                                
+                                <div class="products-grid" id="productsGrid"></div>
+                            </section>
+
+                            <section class="cart-section">
+                                <h2>🛒 Carrito</h2>
+                                ${appState.cart.length === 0 
+                                    ? '<p class="empty-cart">El carrito está vacío</p>' 
+                                    : `
+                                        <div class="cart-items" id="cartItems"></div>
+                                        <div class="cart-summary">
+                                            <h3>Total: $${calculateTotal().toLocaleString('es-CO')}</h3>
+                                        </div>
+                                        <button class="btn-checkout" onclick="handleCheckout()">Procesar Venta</button>
+                                    `
+                                }
+                            </section>
+                        </div>
+                    </div>
+                `;
+
+                renderProducts();
+                if (appState.cart.length > 0) renderCart();
+            }
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const response = await fetch(API_URL + '/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    appState.isLoggedIn = true;
+                    appState.username = username;
+                    appState.error = null;
+                    await loadProducts();
+                    showApp();
+                } else {
+                    appState.error = data.error || 'Credenciales inválidas';
+                    showApp();
+                }
+            } catch (error) {
+                appState.error = 'Error en login: ' + error.message;
+                showApp();
+            }
+        }
+
+        async function loadProducts() {
+            try {
+                appState.loading = true;
+                const response = await fetch(API_URL + '/api/productos');
+                appState.products = await response.json();
+                appState.error = null;
+            } catch (error) {
+                appState.error = 'Error al cargar productos: ' + error.message;
+            } finally {
+                appState.loading = false;
+            }
+        }
+
+        function renderProducts() {
+            const grid = document.getElementById('productsGrid');
+            if (!grid) return;
+
+            grid.innerHTML = appState.products.map(product => `
+                <div class="product-card">
+                    <div class="product-icon">🍔</div>
+                    <h3>${product.nombre}</h3>
+                    <p class="price">$${product.precio.toLocaleString('es-CO')}</p>
+                    <button class="btn-add" onclick="addToCart(${product.id}, '${product.nombre}', ${product.precio})">
+                        Agregar al Carrito
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function renderCart() {
+            const cartItems = document.getElementById('cartItems');
+            if (!cartItems) return;
+
+            cartItems.innerHTML = appState.cart.map(item => `
+                <div class="cart-item">
+                    <div class="item-info">
+                        <h4>${item.nombre}</h4>
+                        <p>$${item.precio} x ${item.cantidad} = <strong>$${(item.precio * item.cantidad).toLocaleString('es-CO')}</strong></p>
+                    </div>
+                    <button class="btn-remove" onclick="removeFromCart(${item.id})">✕</button>
+                </div>
+            `).join('');
+        }
+
+        function addToCart(id, nombre, precio) {
+            const existingItem = appState.cart.find(item => item.id === id);
+
+            if (existingItem) {
+                existingItem.cantidad++;
+            } else {
+                appState.cart.push({ id, nombre, precio, cantidad: 1 });
+            }
+
+            showApp();
+        }
+
+        function removeFromCart(id) {
+            appState.cart = appState.cart.filter(item => item.id !== id);
+            showApp();
+        }
+
+        function calculateTotal() {
+            return appState.cart.reduce((sum, item) => sum + (item.precio * item.cantidad), 0);
+        }
+
+        async function handleCheckout() {
+            if (appState.cart.length === 0) {
+                appState.error = 'El carrito está vacío';
+                showApp();
+                return;
+            }
+
+            try {
+                const response = await fetch(API_URL + '/api/ventas', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        items: appState.cart,
+                        total: calculateTotal(),
+                        usuario: appState.username
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    appState.cart = [];
+                    appState.error = null;
+                    alert('✅ ¡Venta registrada exitosamente!');
+                    showApp();
+                } else {
+                    appState.error = 'Error al registrar venta';
+                    showApp();
+                }
+            } catch (error) {
+                appState.error = 'Error en checkout: ' + error.message;
+                showApp();
+            }
+        }
+
+        function handleLogout() {
+            appState.isLoggedIn = false;
+            appState.username = '';
+            appState.cart = [];
+            appState.error = null;
+            showApp();
+        }
+
+        // Iniciar app
+        showApp();
+    </script>
+</body>
+</html>

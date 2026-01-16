@@ -1,0 +1,7 @@
+﻿flask
+flask-cors
+flask-sqlalchemy
+bcrypt
+werkzeug
+pyjwt
+python-dotenv

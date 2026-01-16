@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test API - Carbon y Cheddar</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        h1 { color: #333; }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover { background: #0056b3; }
+        .response {
+            background: #f9f9f9;
+            padding: 10px;
+            margin-top: 10px;
+            border-left: 4px solid #007bff;
+            word-break: break-all;
+            font-family: monospace;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success { border-left-color: #28a745; color: #28a745; }
+        .error { border-left-color: #dc3545; color: #dc3545; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🍔 Test API - Carbon y Cheddar</h1>
+        
+        <div class="test-section">
+            <h3>1. Raíz (GET /)</h3>
+            <button onclick="testRoot()">Probar Raíz</button>
+            <div id="response-root" class="response"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>2. Obtener Productos (GET /api/productos)</h3>
+            <button onclick="testProductos()">Probar Productos</button>
+            <div id="response-productos" class="response"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>3. Login (POST /api/login)</h3>
+            <p>Usuario: <strong>admin</strong> | Contraseña: <strong>admin123</strong></p>
+            <button onclick="testLogin()">Probar Login</button>
+            <div id="response-login" class="response"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>4. Crear Venta (POST /api/ventas)</h3>
+            <button onclick="testVentas()">Probar Venta</button>
+            <div id="response-ventas" class="response"></div>
+        </div>
+    </div>
+
+    <script>
+        const BASE_URL = 'http://localhost:5000';
+
+        async function testRoot() {
+            await makeRequest('GET', '/', 'response-root');
+        }
+
+        async function testProductos() {
+            await makeRequest('GET', '/api/productos', 'response-productos');
+        }
+
+        async function testLogin() {
+            const data = {
+                username: 'admin',
+                password: 'admin123'
+            };
+            await makeRequest('POST', '/api/login', 'response-login', data);
+        }
+
+        async function testVentas() {
+            const data = {
+                producto: 'Burger Clásica',
+                cantidad: 2,
+                total: 9000
+            };
+            await makeRequest('POST', '/api/ventas', 'response-ventas', data);
+        }
+
+        async function makeRequest(method, endpoint, responseId, body = null) {
+            const responseEl = document.getElementById(responseId);
+            responseEl.innerHTML = '⏳ Cargando...';
+            
+            try {
+                const options = {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                };
+                
+                if (body) {
+                    options.body = JSON.stringify(body);
+                }
+
+                const response = await fetch(BASE_URL + endpoint, options);
+                const data = await response.json();
+                
+                responseEl.className = response.ok ? 'response success' : 'response error';
+                responseEl.innerHTML = `
+                    <strong>Status:</strong> ${response.status}<br>
+                    <strong>Response:</strong><br>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            } catch (error) {
+                responseEl.className = 'response error';
+                responseEl.innerHTML = `<strong>Error:</strong> ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>

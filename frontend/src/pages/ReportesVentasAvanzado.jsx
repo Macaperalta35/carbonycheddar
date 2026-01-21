@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { apiClient } from '../services/apiService';
+import apiClient from '../services/apiService';
 
 /**
  * Componente de Reportes Avanzados

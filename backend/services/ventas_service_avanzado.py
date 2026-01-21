@@ -119,16 +119,19 @@ class VentasServiceAvanzado:
             total = subtotal_desc + iva + propina
             
             # Crear venta
+            # Obtener nombre del usuario
+            usuario = Usuario.query.get(usuario_id)
+            usuario_nombre = usuario.nombre if usuario else f"Usuario {usuario_id}"
+            
             venta = Venta(
-                usuario_id=usuario_id,
+                usuario=usuario_nombre,
                 cliente_nombre=cliente_nombre,
                 numero_mesa=numero_mesa,
                 subtotal=subtotal,
                 descuento=descuento_monto,
                 iva=iva,
                 propina=propina,
-                total=total,
-                comentarios=comentarios
+                total=total
             )
             
             db.session.add(venta)

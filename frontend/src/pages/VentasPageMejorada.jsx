@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import apiClient from '../services/apiService';
 
 /**
@@ -153,6 +154,7 @@ const ComandaViewer = ({ ventaId, onClose }) => {
  * Componente mejorado para el POS con explosión de recetas
  */
 const VentasPageMejorada = () => {
+  const navigate = useNavigate();
   const [productos, setProductos] = useState([]);
   const [recetas, setRecetas] = useState([]);
   const [cart, setCart] = useState([]);
@@ -304,7 +306,16 @@ const VentasPageMejorada = () => {
 
   return (
     <div style={styles.container}>
-      <h1>🛒 Punto de Venta - Sistema de Explosión de Recetas</h1>
+      <div style={styles.header}>
+        <h1>🛒 Punto de Venta - Sistema de Explosión de Recetas</h1>
+        <button
+          onClick={() => navigate('/dashboard')}
+          style={styles.btnVolver}
+          title="Volver al menú principal"
+        >
+          ← Volver al Menú
+        </button>
+      </div>
 
       {error && <div style={styles.error}>{error}</div>}
       {ventaExitosa && (
@@ -558,6 +569,25 @@ const styles = {
     margin: '0 auto',
     backgroundColor: '#f5f5f5',
     minHeight: '100vh'
+  },
+  header: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '20px',
+    paddingBottom: '15px',
+    borderBottom: '2px solid #e0e0e0'
+  },
+  btnVolver: {
+    padding: '10px 20px',
+    backgroundColor: '#FF9800',
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontWeight: 'bold',
+    fontSize: '0.95em',
+    transition: 'all 0.3s ease'
   },
   mainContent: {
     display: 'grid',

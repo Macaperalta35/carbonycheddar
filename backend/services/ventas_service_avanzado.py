@@ -532,11 +532,16 @@ Cajero: {usuario_nombre}
         
         agrupar_por: 'hora' | 'producto' | 'receta'
         """
+        # Obtener nombre del usuario desde su ID
+        usuario = Usuario.query.get(usuario_id)
+        if not usuario:
+            raise ValueError(f"Usuario {usuario_id} no encontrado")
+        
         fecha_inicio = datetime.combine(fecha, datetime.min.time())
         fecha_fin = fecha_inicio + timedelta(days=1)
         
         ventas = Venta.query.filter(
-            Venta.usuario_id == usuario_id,
+            Venta.usuario == usuario.nombre,
             Venta.created_at >= fecha_inicio,
             Venta.created_at < fecha_fin
         ).order_by(Venta.created_at).all()
@@ -594,8 +599,13 @@ Cajero: {usuario_nombre}
         """
         Genera reporte de ventas por día en un rango
         """
+        # Obtener nombre del usuario desde su ID
+        usuario = Usuario.query.get(usuario_id)
+        if not usuario:
+            raise ValueError(f"Usuario {usuario_id} no encontrado")
+        
         ventas = Venta.query.filter(
-            Venta.usuario_id == usuario_id,
+            Venta.usuario == usuario.nombre,
             Venta.created_at >= datetime.combine(fecha_inicio, datetime.min.time()),
             Venta.created_at < datetime.combine(fecha_fin + timedelta(days=1), datetime.min.time())
         ).all()
@@ -643,8 +653,13 @@ Cajero: {usuario_nombre}
         """
         Reporte detallado con desglose completo
         """
+        # Obtener nombre del usuario desde su ID
+        usuario = Usuario.query.get(usuario_id)
+        if not usuario:
+            raise ValueError(f"Usuario {usuario_id} no encontrado")
+        
         ventas = Venta.query.filter(
-            Venta.usuario_id == usuario_id,
+            Venta.usuario == usuario.nombre,
             Venta.created_at >= datetime.combine(fecha_inicio, datetime.min.time()),
             Venta.created_at < datetime.combine(fecha_fin + timedelta(days=1), datetime.min.time())
         ).order_by(desc(Venta.created_at)).all()

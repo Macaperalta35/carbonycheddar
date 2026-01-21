@@ -179,14 +179,19 @@ const VentasPageMejorada = () => {
       setCargando(true);
       
       const [productosRes, recetasRes] = await Promise.all([
-        apiClient.get('/productos'),
-        apiClient.get('/recetas')
+        apiClient.get('/productos').catch(err => ({ data: { data: [] } })),
+        apiClient.get('/recetas').catch(err => ({ data: { data: [] } }))
       ]);
 
-      setProductos(productosRes.data.data || []);
-      setRecetas(recetasRes.data.data || []);
+      setProductos(productosRes.data.data || productosRes.data || []);
+      setRecetas(recetasRes.data.data || recetasRes.data || []);
+      
+      if ((!productosRes.data || !productosRes.data.data || productosRes.data.data.length === 0) &&
+          (!recetasRes.data || !recetasRes.data.data || recetasRes.data.data.length === 0)) {
+        setError('No hay productos o recetas disponibles');
+      }
     } catch (err) {
-      setError('Error al cargar datos');
+      setError('Error al cargar datos: ' + (err.message || 'desconocido'));
       console.error(err);
     } finally {
       setCargando(false);

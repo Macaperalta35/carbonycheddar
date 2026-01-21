@@ -10,9 +10,34 @@ from services.calculos_service import CalculoCostos, GeneradorReportes
 recetas_bp = Blueprint('recetas', __name__)
 
 
+# ENDPOINT PÚBLICO - SIN AUTENTICACIÓN (para POS)
 @recetas_bp.route('/recetas', methods=['GET'])
+def listar_recetas_publico():
+    """
+    Endpoint PÚBLICO para listar todas las recetas (sin autenticación).
+    Usado por el POS para mostrar productos disponibles.
+    """
+    try:
+        from models import Receta
+        
+        recetas = Receta.query.all()
+        
+        return jsonify({
+            'success': True,
+            'data': [receta.to_dict() for receta in recetas]
+        }), 200
+    
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+# ENDPOINT PROTEGIDO - CON AUTENTICACIÓN (para gestión de recetas)
+@recetas_bp.route('/recetas-usuario', methods=['GET'])
 @AuthService.requerir_autenticacion
-def listar_recetas():
+def listar_recetas_usuario():
     """
     Endpoint para listar todas las recetas del usuario autenticado.
     

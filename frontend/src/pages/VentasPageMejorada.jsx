@@ -785,7 +785,7 @@ const styles = {
     zIndex: 1001,
     boxShadow: '0 4px 20px rgba(0,0,0,0.3)'
   },
-  header: {
+  comandaHeader: {
     padding: '15px',
     borderBottom: '1px solid #e0e0e0',
     display: 'flex',

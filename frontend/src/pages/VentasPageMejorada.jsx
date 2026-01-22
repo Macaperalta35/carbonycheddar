@@ -24,9 +24,9 @@ const ComandaViewer = ({ ventaId, onClose }) => {
     try {
       setCargando(true);
       setError(null);
-      
+
       const response = await apiClient.get(`/ventas/${ventaId}/comanda/${tipo}`);
-      
+
       if (response.data.success) {
         setComanda(response.data.data);
       }
@@ -40,14 +40,14 @@ const ComandaViewer = ({ ventaId, onClose }) => {
   const imprimirComanda = async () => {
     try {
       setImprimiendo(true);
-      
+
       // Crear iframe invisible para imprimir
       const printWindow = window.open('', '', 'height=500,width=800');
-      
+
       if (comanda) {
         printWindow.document.write(comanda.html);
         printWindow.document.close();
-        
+
         // Esperar a que se cargue el contenido
         setTimeout(() => {
           printWindow.print();
@@ -78,7 +78,7 @@ const ComandaViewer = ({ ventaId, onClose }) => {
   return (
     <div style={styles.modal}>
       <div style={styles.overlay} onClick={onClose}></div>
-      
+
       <div style={styles.contenedor}>
         <div style={styles.header}>
           <h2>Comanda #{ventaId}</h2>
@@ -114,7 +114,7 @@ const ComandaViewer = ({ ventaId, onClose }) => {
 
         {comanda && (
           <>
-            <div 
+            <div
               style={styles.comanda}
               dangerouslySetInnerHTML={{ __html: comanda.html }}
             />
@@ -177,7 +177,7 @@ const VentasPageMejorada = () => {
   const cargarDatos = async () => {
     try {
       setCargando(true);
-      
+
       const [productosRes, recetasRes] = await Promise.all([
         apiClient.get('/productos').catch(err => ({ data: { data: [] } })),
         apiClient.get('/recetas').catch(err => ({ data: { data: [] } }))
@@ -185,9 +185,9 @@ const VentasPageMejorada = () => {
 
       setProductos(productosRes.data.data || productosRes.data || []);
       setRecetas(recetasRes.data.data || recetasRes.data || []);
-      
+
       if ((!productosRes.data || !productosRes.data.data || productosRes.data.data.length === 0) &&
-          (!recetasRes.data || !recetasRes.data.data || recetasRes.data.data.length === 0)) {
+        (!recetasRes.data || !recetasRes.data.data || recetasRes.data.data.length === 0)) {
         setError('No hay productos o recetas disponibles');
       }
     } catch (err) {
@@ -198,9 +198,36 @@ const VentasPageMejorada = () => {
     }
   };
 
-  const agregarAlCarrito = (item, tipo) => {
+  const agregarAlCarrito = async (item, tipo) => {
+    try {
+      // Validar stock con el backend (recursivo)
+      const res = await apiClient.get('/ventas/validar-stock', {
+        params: { tipo: tipo, id: item.id, cantidad: 1 }
+      });
+
+      if (res.data.success) {
+        const stockData = res.data.data;
+        if (!stockData.disponible) {
+          const faltantesStr = stockData.faltantes
+            .map(f => `${f.nombre} (Stock: ${f.stock_actual} / Requerido: ${f.requerido} ${f.unidad || ''})`)
+            .join('\n');
+
+          const confirmar = window.confirm(
+            `⚠️ ATENCIÓN: Faltan ingredientes para este producto:\n\n${faltantesStr}\n\n¿Deseas agregarlo al carrito de todos modos?`
+          );
+
+          if (!confirmar) return;
+        }
+      }
+    } catch (err) {
+      console.error('Error validando stock:', err);
+      // Si falla la validación (ej: error 500), avisar pero permitir agregar o manejar el error
+      const proceed = window.confirm('No se pudo verificar el stock. ¿Deseas agregar el producto de todos modos?');
+      if (!proceed) return;
+    }
+
     const nuevoItem = {
-      id: `${tipo}-${item.id}`,
+      id: `${tipo}-${item.id}-${Date.now()}`, // Agregar timestamp para permitir múltiples entradas del mismo item si se desea o IDs únicos
       tipo: tipo,
       id_ref: item.id,
       nombre: item.nombre,
@@ -281,7 +308,7 @@ const VentasPageMejorada = () => {
         setVentaExitosa(venta);
         setVentaId(venta.venta_id);
         setMostrarComanda(true);
-        
+
         // Limpiar carrito
         setCart([]);
         setCliente('');

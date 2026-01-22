@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from models import db, Ingrediente, ReabastecimientoInventario, Receta
+from models import db, Ingrediente, ReabastecimientoInventario, Receta, MermaIngrediente
 from services.auth_service import AuthService
 from services.calculos_service import CalculoCostos
 
@@ -82,6 +82,57 @@ def reabastecer_inventario():
         return jsonify({
             'success': True,
             'mensaje': 'Inventario actualizado correctamente',
+            'ingrediente': ingrediente.to_dict()
+        }), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@inventario_bp.route('/mermas', methods=['POST'])
+@AuthService.requerir_autenticacion
+def registrar_merma():
+    """
+    Registra una merma/desperdicio de ingrediente.
+    Resta del stock actual.
+    """
+    try:
+        datos = request.get_json()
+        
+        required = ['ingrediente_id', 'cantidad']
+        if not all(k in datos for k in required):
+            return jsonify({'error': 'Faltan datos requeridos (ingrediente_id, cantidad)'}), 400
+            
+        ingrediente = Ingrediente.query.get(datos['ingrediente_id'])
+        if not ingrediente:
+            return jsonify({'error': 'Ingrediente no encontrado'}), 404
+            
+        cantidad = float(datos['cantidad'])
+        if cantidad <= 0:
+             return jsonify({'error': 'La cantidad debe ser positiva'}), 400
+             
+        if (ingrediente.stock_actual or 0) < cantidad:
+             # Opcional: permitir stock negativo o no. 
+             # Generalmente las mermas se registran sobre lo que había.
+             pass 
+
+        # Crear registro de merma
+        merma = MermaIngrediente(
+            ingrediente_id=ingrediente.id,
+            cantidad=cantidad,
+            razon=datos.get('razon', 'Sin especificar'),
+            usuario_id=request.usuario.id
+        )
+        
+        # Descontar stock
+        ingrediente.stock_actual = (ingrediente.stock_actual or 0) - cantidad
+        
+        db.session.add(merma)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'mensaje': 'Merma registrada, stock descontado',
             'ingrediente': ingrediente.to_dict()
         }), 201
         

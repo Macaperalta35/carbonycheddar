@@ -338,3 +338,70 @@ def actualizar_venta(venta_id):
             'success': False,
             'message': f'Error: {str(e)}'
         }), 500
+@ventas_bp.route('/validar-stock', methods=['GET'])
+@AuthService.requerir_autenticacion
+def validar_stock():
+    """
+    Valida stock disponible para un item (producto o receta)
+    
+    Query params:
+    - tipo: producto|receta
+    - id: int
+    - cantidad: int (default 1)
+    """
+    try:
+        tipo = request.args.get('tipo')
+        item_id = request.args.get('id', type=int)
+        cantidad = request.args.get('cantidad', 1, type=int)
+        
+        if not tipo or not item_id:
+            return jsonify({
+                'success': False,
+                'message': 'Parámetros tipo e id son requeridos'
+            }), 400
+            
+        resultado = VentasServiceAvanzado.validar_disponibilidad_stock(tipo, item_id, cantidad)
+        
+        return jsonify({
+            'success': True,
+            'data': resultado
+        }), 200
+        
+    except ValueError as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 400
+    except Exception as e:
+        print(traceback.format_exc())
+        return jsonify({
+            'success': False,
+            'message': f'Error validando stock: {str(e)}'
+        }), 500
+
+@ventas_bp.route('/<int:venta_id>/anular', methods=['POST'])
+@AuthService.requerir_autenticacion
+def anular_venta(venta_id):
+    """
+    Anula una venta y devuelve stock
+    """
+    try:
+        success, message = VentasServiceAvanzado.anular_venta(venta_id, request.usuario_id)
+        
+        if not success:
+            return jsonify({
+                'success': False,
+                'message': message
+            }), 400
+            
+        return jsonify({
+            'success': True,
+            'message': message
+        }), 200
+        
+    except Exception as e:
+        print(traceback.format_exc())
+        return jsonify({
+            'success': False,
+            'message': f'Error al anular venta: {str(e)}'
+        }), 500

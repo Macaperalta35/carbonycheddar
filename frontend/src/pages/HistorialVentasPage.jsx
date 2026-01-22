@@ -91,6 +91,21 @@ const HistorialVentasPage = () => {
         }
     };
 
+    const anularVenta = async (id) => {
+        if (!window.confirm('¿Estás seguro de que deseas ANULAR esta venta? El stock será devuelto al inventario.')) {
+            return;
+        }
+
+        try {
+            await apiClient.post(`/ventas/${id}/anular`);
+            alert('Venta anulada correctamente');
+            setVentaSeleccionada(null);
+            buscarVentas();
+        } catch (err) {
+            alert('Error al anular venta: ' + (err.response?.data?.message || err.message));
+        }
+    };
+
     return (
         <div style={styles.container}>
             <div style={styles.header}>
@@ -99,6 +114,7 @@ const HistorialVentasPage = () => {
             </div>
 
             <div style={styles.filtros}>
+                {/* Filtros existentes */}
                 <input
                     placeholder="N° Orden"
                     value={filtros.id}
@@ -132,19 +148,23 @@ const HistorialVentasPage = () => {
                                 <th>Cliente</th>
                                 <th>Mesa</th>
                                 <th>Total</th>
-                                <th>Items</th>
+                                <th>Estado</th>
                                 <th>Acción</th>
                             </tr>
                         </thead>
                         <tbody>
                             {ventas.map(v => (
-                                <tr key={v.id}>
+                                <tr key={v.id} style={v.anulada ? { opacity: 0.5, backgroundColor: '#f9f9f9' } : {}}>
                                     <td><strong>{v.id}</strong></td>
                                     <td>{new Date(v.created_at).toLocaleString()}</td>
                                     <td>{v.cliente_nombre || '-'}</td>
                                     <td>{v.numero_mesa || '-'}</td>
-                                    <td>${v.total.toFixed(2)}</td>
-                                    <td>{v.items.length}</td>
+                                    <td style={v.anulada ? { textDecoration: 'line-through' } : {}}>
+                                        ${v.total.toFixed(2)}
+                                    </td>
+                                    <td>
+                                        {v.anulada ? <span style={{ color: 'red', fontWeight: 'bold' }}>ANULADA</span> : <span style={{ color: 'green' }}>Completada</span>}
+                                    </td>
                                     <td>
                                         <button onClick={() => verDetalle(v)} style={styles.btnVer}>Ver / Editar</button>
                                     </td>
@@ -159,7 +179,7 @@ const HistorialVentasPage = () => {
             {ventaSeleccionada && (
                 <div style={styles.modalOverlay}>
                     <div style={styles.modal}>
-                        <h2>Orden #{ventaSeleccionada.id}</h2>
+                        <h2> Orden #{ventaSeleccionada.id} {ventaSeleccionada.anulada && <span style={{ color: 'red' }}>(ANULADA)</span>}</h2>
 
                         <div style={styles.modalContent}>
                             {!editando ? (
@@ -170,9 +190,22 @@ const HistorialVentasPage = () => {
                                         <p><strong>Fecha:</strong> {new Date(ventaSeleccionada.created_at).toLocaleString()}</p>
                                     </div>
                                     <div style={styles.actionsRow}>
-                                        <button onClick={() => setEditando(true)} style={styles.btnEdit}>✏️ Editar Datos</button>
-                                        <button onClick={() => imprimirComanda('cocina')} style={styles.btnPrint}>🖨️ Cocina</button>
-                                        <button onClick={() => imprimirComanda('caja')} style={styles.btnPrint}>🖨️ Ticket Cliente</button>
+                                        {!ventaSeleccionada.anulada && (
+                                            <>
+                                                <button onClick={() => setEditando(true)} style={styles.btnEdit}>✏️ Editar Datos</button>
+                                                <button onClick={() => imprimirComanda('cocina')} style={styles.btnPrint}>🖨️ Cocina</button>
+                                                <button onClick={() => imprimirComanda('caja')} style={styles.btnPrint}>🖨️ Ticket Cliente</button>
+                                            </>
+                                        )}
+
+                                        {!ventaSeleccionada.anulada && (
+                                            <button
+                                                onClick={() => anularVenta(ventaSeleccionada.id)}
+                                                style={{ ...styles.btnCancel, marginLeft: 'auto', backgroundColor: '#d32f2f' }}
+                                            >
+                                                🚫 ANULAR VENTA
+                                            </button>
+                                        )}
                                     </div>
                                     <hr />
                                     <h3>Items</h3>
@@ -193,6 +226,7 @@ const HistorialVentasPage = () => {
                                 </>
                             ) : (
                                 <div style={styles.formEdit}>
+                                    {/* Formulario de edición existente */}
                                     <label>Cliente:</label>
                                     <input
                                         value={datosEdicion.cliente_nombre}

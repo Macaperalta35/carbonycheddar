@@ -53,7 +53,7 @@ def listar_ingredientes():
 
 @ingredientes_bp.route('/ingredientes', methods=['POST'])
 @AuthService.requerir_autenticacion
-@AuthService.requerir_rol('admin')
+# @AuthService.requerir_rol('admin') # Permitir a todos los usuarios autenticados crear ingredientes por ahora
 def crear_ingrediente():
     """
     Endpoint para crear un nuevo ingrediente. Requiere rol admin.

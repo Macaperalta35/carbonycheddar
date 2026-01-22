@@ -66,7 +66,14 @@ export default function Dashboard() {
     <div style={styles.container}>
       {/* Header */}
       <header style={styles.header}>
-        <h1 style={styles.headerTitle}>📊 Sistema de Ventas</h1>
+        <h1 style={styles.headerTitle}>
+          <img
+            src={localStorage.getItem('logoUrl') || "http://localhost:5000/static/uploads/logo_empresa.jpg"}
+            onError={(e) => { e.target.onerror = null; e.target.src = '/logo.jpg' }}
+            alt="Logo"
+            style={styles.logo}
+          />
+        </h1>
         <div>
           <span style={styles.bienvenida}>
             Bienvenido, {usuario?.nombre || 'Usuario'}
@@ -297,6 +304,55 @@ export default function Dashboard() {
               </div>
 
               <div style={styles.configSection}>
+                <h3>Logo / Marca</h3>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '15px' }}>
+                  <img
+                    src={localStorage.getItem('logoUrl') || "http://localhost:5000/static/uploads/logo_empresa.jpg"}
+                    onError={(e) => { e.target.onerror = null; e.target.src = '/logo.jpg' }}
+                    alt="Logo Actual"
+                    style={{ height: '100px', borderRadius: '10px', boxShadow: '0 4px 10px rgba(0,0,0,0.5)' }}
+                  />
+                  <div>
+                    <p style={{ marginBottom: '5px' }}>Sube tu logo (JPG/PNG)</p>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={async (e) => {
+                        const file = e.target.files[0];
+                        if (!file) return;
+
+                        const formData = new FormData();
+                        formData.append('logo', file);
+
+                        try {
+                          // Asumimos que apiClient ya existe e importado arriba, pero por si acaso usamos fetch directo con token
+                          const token = localStorage.getItem('token');
+                          const res = await fetch('http://localhost:5000/api/admin/logo', {
+                            method: 'POST',
+                            headers: {
+                              'Authorization': `Bearer ${token}`
+                            },
+                            body: formData
+                          });
+                          const data = await res.json();
+
+                          if (data.success) {
+                            const newUrl = `http://localhost:5000${data.url}?t=${new Date().getTime()}`;
+                            localStorage.setItem('logoUrl', newUrl);
+                            alert('Logo actualizado!');
+                            window.location.reload(); // Recargar para aplicar en todos lados
+                          } else {
+                            alert('Error: ' + data.error);
+                          }
+                        } catch (err) {
+                          alert('Error subiendo logo: ' + err.message);
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
+
                 <h3>Información del Usuario</h3>
                 <div style={styles.infoBlock}>
                   <p><strong>Nombre:</strong> {usuario?.nombre || 'No disponible'}</p>
@@ -315,190 +371,234 @@ export default function Dashboard() {
 const styles = {
   container: {
     minHeight: '100vh',
-    background: '#f5f5f5',
-    fontFamily: 'Arial, sans-serif'
+    background: 'var(--bg-main)',
+    color: 'var(--text-main)',
+    fontFamily: "'Inter', sans-serif"
   },
   header: {
-    background: '#667eea',
-    color: 'white',
-    padding: '20px',
+    background: 'var(--bg-card)',
+    padding: '20px 40px',
     display: 'flex',
     justifyContent: 'space-between',
-    alignItems: 'center'
+    alignItems: 'center',
+    borderBottom: 'var(--border-gold)',
+    boxShadow: 'var(--shadow-card)'
   },
   headerTitle: {
     margin: 0,
-    fontSize: '28px'
+    fontSize: '24px',
+    fontWeight: '300',
+    color: 'var(--primary-gold)',
+    letterSpacing: '2px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '15px'
+  },
+  logo: {
+    height: '60px',
+    borderRadius: '8px',
+    border: 'var(--border-gold)'
   },
   bienvenida: {
     marginRight: '20px',
-    fontSize: '14px'
+    fontSize: '14px',
+    color: 'var(--text-secondary)',
+    fontWeight: '500'
   },
   buttonLogout: {
-    padding: '8px 16px',
-    background: '#f44336',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer'
+    padding: '10px 20px',
+    background: 'var(--bg-card)',
+    color: 'var(--text-secondary)',
+    border: '1px solid #ddd',
+    borderRadius: '30px',
+    cursor: 'pointer',
+    fontSize: '13px',
+    textTransform: 'uppercase',
+    letterSpacing: '1px',
+    transition: 'all 0.3s'
   },
   tabsContainer: {
-    background: 'white',
+    background: 'var(--bg-card)',
     display: 'flex',
-    borderBottom: '2px solid #ddd',
-    padding: '0 20px'
+    borderBottom: 'var(--border-light)',
+    padding: '0 40px',
+    overflowX: 'auto',
+    gap: '5px'
   },
   tabButton: {
-    padding: '15px 20px',
-    background: 'none',
+    padding: '20px 25px',
+    background: 'transparent',
     border: 'none',
     borderBottom: '3px solid transparent',
     cursor: 'pointer',
     fontSize: '14px',
-    color: '#666',
-    transition: 'all 0.3s'
+    color: 'var(--text-secondary)',
+    transition: 'all 0.3s',
+    whiteSpace: 'nowrap',
+    fontWeight: '500'
   },
   tabActive: {
-    borderBottomColor: '#667eea',
-    color: '#667eea',
-    fontWeight: 'bold'
+    borderBottomColor: 'var(--primary-gold)',
+    color: 'var(--primary-gold)',
+    fontWeight: 'bold',
+    background: 'linear-gradient(to top, rgba(197, 160, 40, 0.05), transparent)'
   },
   content: {
     maxWidth: '1200px',
     margin: '0 auto',
-    padding: '20px'
+    padding: '40px 20px'
   },
   sectionHeader: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: '20px'
+    marginBottom: '30px'
   },
   buttonPrimary: {
-    padding: '10px 20px',
-    background: '#667eea',
-    color: 'white',
+    padding: '12px 24px',
+    background: 'linear-gradient(45deg, var(--primary-gold), #D4AF37)',
+    color: '#fff',
     border: 'none',
-    borderRadius: '4px',
+    borderRadius: '50px',
     cursor: 'pointer',
-    fontWeight: 'bold'
+    fontWeight: 'bold',
+    textTransform: 'uppercase',
+    letterSpacing: '1px',
+    boxShadow: 'var(--shadow-gold)'
   },
   emptyState: {
     textAlign: 'center',
-    padding: '40px',
-    background: 'white',
-    borderRadius: '8px'
+    padding: '60px',
+    background: 'var(--bg-card)',
+    borderRadius: '16px',
+    border: 'var(--border-light)',
+    color: 'var(--text-secondary)',
+    boxShadow: 'var(--shadow-card)'
   },
   recetasGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-    gap: '20px'
+    gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+    gap: '30px'
   },
   recetaCard: {
-    background: 'white',
-    padding: '20px',
-    borderRadius: '8px',
-    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-    transition: 'transform 0.3s'
+    background: 'var(--bg-card)',
+    padding: '25px',
+    borderRadius: '16px',
+    border: 'var(--border-light)',
+    boxShadow: 'var(--shadow-card)',
+    transition: 'transform 0.3s, box-shadow 0.3s'
   },
   descripcion: {
-    color: '#666',
-    fontSize: '13px',
-    margin: '8px 0'
+    color: 'var(--text-secondary)',
+    fontSize: '14px',
+    margin: '10px 0 20px 0',
+    lineHeight: '1.5'
   },
   stats: {
     display: 'grid',
     gridTemplateColumns: '1fr 1fr',
-    gap: '10px',
-    margin: '15px 0'
+    gap: '15px',
+    margin: '20px 0'
   },
   stat: {
     display: 'flex',
     flexDirection: 'column',
-    padding: '8px',
-    background: '#f0f0f0',
-    borderRadius: '4px'
+    padding: '12px',
+    background: 'var(--bg-main)',
+    borderRadius: '8px',
+    border: 'var(--border-light)'
   },
   label: {
-    fontSize: '12px',
-    color: '#666'
+    fontSize: '11px',
+    color: 'var(--text-secondary)',
+    textTransform: 'uppercase',
+    letterSpacing: '1px',
+    marginBottom: '5px'
   },
   value: {
-    fontSize: '14px',
-    fontWeight: 'bold',
-    color: '#333'
+    fontSize: '16px',
+    fontWeight: '600',
+    color: 'var(--text-main)'
   },
   cardActions: {
     display: 'flex',
-    gap: '10px',
-    marginTop: '15px'
+    gap: '15px',
+    marginTop: '25px'
   },
   buttonSecondary: {
     flex: 1,
-    padding: '8px',
-    background: '#2196f3',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
+    padding: '10px',
+    background: 'transparent',
+    color: 'var(--text-main)',
+    border: '1px solid #ddd',
+    borderRadius: '8px',
     cursor: 'pointer'
   },
   buttonDanger: {
     flex: 1,
-    padding: '8px',
-    background: '#f44336',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
+    padding: '10px',
+    background: '#ffebee',
+    color: 'var(--danger)',
+    border: '1px solid var(--danger)',
+    borderRadius: '8px',
     cursor: 'pointer'
   },
   reporteContainer: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
-    gap: '20px'
+    gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+    gap: '30px'
   },
   reporteCard: {
-    background: 'white',
-    padding: '20px',
-    borderRadius: '8px',
-    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
+    background: 'var(--bg-card)',
+    padding: '30px',
+    borderRadius: '16px',
+    border: 'var(--border-light)',
+    boxShadow: 'var(--shadow-card)'
   },
   reporteContent: {
-    marginTop: '15px'
+    marginTop: '20px'
   },
   reporteItem: {
     display: 'flex',
     justifyContent: 'space-between',
-    padding: '10px 0',
-    borderBottom: '1px solid #eee',
-    fontSize: '14px'
+    padding: '15px 0',
+    borderBottom: '1px solid #f0f0f0',
+    fontSize: '15px',
+    color: 'var(--text-main)'
   },
   configCard: {
-    background: 'white',
-    borderRadius: '8px',
-    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-    padding: '30px'
+    background: 'var(--bg-card)',
+    borderRadius: '16px',
+    padding: '40px',
+    maxWidth: '800px',
+    margin: '0 auto',
+    boxShadow: 'var(--shadow-card)',
+    border: 'var(--border-light)'
   },
   configSection: {
-    marginBottom: '30px',
-    paddingBottom: '30px',
-    borderBottom: '1px solid #eee'
+    marginBottom: '40px',
+    paddingBottom: '40px',
+    borderBottom: '1px solid #f0f0f0'
   },
   formGroup: {
-    marginBottom: '15px'
+    marginBottom: '25px'
   },
   input: {
     width: '100%',
-    padding: '10px 12px',
+    padding: '15px',
+    background: 'var(--bg-main)',
     border: '1px solid #ddd',
-    borderRadius: '4px',
-    fontSize: '14px',
+    borderRadius: '8px',
+    fontSize: '16px',
+    color: 'var(--text-main)',
     boxSizing: 'border-box',
-    fontFamily: 'Arial, sans-serif'
+    fontFamily: "'Inter', sans-serif"
   },
   infoBlock: {
-    background: '#f5f5f5',
-    padding: '15px',
-    borderRadius: '4px',
-    lineHeight: '1.8'
+    background: 'var(--bg-main)',
+    padding: '20px',
+    borderRadius: '8px',
+    lineHeight: '2',
+    color: 'var(--text-secondary)'
   }
 };

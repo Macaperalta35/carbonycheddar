@@ -229,6 +229,7 @@ class Venta(db.Model):
     iva = db.Column(db.Float, default=0)
     propina = db.Column(db.Float, default=0)
     total = db.Column(db.Float, default=0)
+    anulada = db.Column(db.Boolean, default=False)  # Nueva bandera para anulación
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     items = db.relationship('VentaItem', backref='venta', lazy=True, cascade='all, delete-orphan')
@@ -244,6 +245,7 @@ class Venta(db.Model):
             'iva': self.iva,
             'propina': self.propina,
             'total': self.total,
+            'anulada': self.anulada,
             'items': [item.to_dict() for item in self.items],
             'created_at': self.created_at.isoformat()
         }
@@ -308,6 +310,29 @@ class Merma(db.Model):
             'cantidad': self.cantidad,
             'razon': self.razon,
             'usuario': self.usuario,
+            'created_at': self.created_at.isoformat()
+        }
+
+class MermaIngrediente(db.Model):
+    __tablename__ = 'mermas_ingredientes'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    ingrediente_id = db.Column(db.Integer, db.ForeignKey('ingredientes.id'), nullable=False)
+    cantidad = db.Column(db.Float, nullable=False)
+    razon = db.Column(db.String(255))
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    ingrediente = db.relationship('Ingrediente')
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'ingrediente_id': self.ingrediente_id,
+            'ingrediente_nombre': self.ingrediente.nombre,
+            'cantidad': self.cantidad,
+            'razon': self.razon,
+            'usuario_id': self.usuario_id,
             'created_at': self.created_at.isoformat()
         }
 

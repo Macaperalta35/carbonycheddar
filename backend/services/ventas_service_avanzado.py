@@ -809,3 +809,136 @@ Cajero: {usuario_nombre}
         
         db.session.commit()
         return venta.to_dict()
+    @staticmethod
+    def validar_disponibilidad_stock(tipo, item_id, cantidad=1):
+        """
+        Valida si hay stock suficiente para un producto o receta (incluyendo explosión de ingredientes).
+        
+        Retorna:
+            dict {disponible: bool, faltantes: list}
+        """
+        if tipo == 'producto':
+            producto = Producto.query.get(item_id)
+            if not producto:
+                raise ValueError("Producto no encontrado")
+            
+            disponible = (producto.stock or 0) >= cantidad
+            faltantes = []
+            
+            if not disponible:
+                faltantes.append({
+                    'nombre': producto.nombre,
+                    'stock_actual': producto.stock or 0,
+                    'requerido': cantidad,
+                    'id': producto.id,
+                    'tipo': 'producto'
+                })
+            
+            return {
+                'disponible': disponible,
+                'faltantes': faltantes
+            }
+            
+        elif tipo == 'receta':
+            receta = Receta.query.get(item_id)
+            if not receta:
+                raise ValueError("Receta no encontrada")
+            
+            # Usar la lógica de explosión existente para recolectar necesidades de ingredientes
+            descuentos_tracking = {}
+            VentasServiceAvanzado._procesar_explosion_receta(receta, cantidad, descuentos_tracking)
+            
+            faltantes = []
+            for ing_id, cant_req in descuentos_tracking.items():
+                ingrediente = Ingrediente.query.get(ing_id)
+                if ingrediente:
+                    stock_actual = ingrediente.stock_actual or 0
+                    if stock_actual < cant_req:
+                        faltantes.append({
+                            'nombre': ingrediente.nombre,
+                            'stock_actual': stock_actual,
+                            'requerido': cant_req,
+                            'unidad': ingrediente.unidad_medida,
+                            'id': ingrediente.id,
+                            'tipo': 'ingrediente'
+                        })
+            
+            return {
+                'disponible': len(faltantes) == 0,
+                'faltantes': faltantes
+            }
+        
+        else:
+            raise ValueError(f"Tipo de item inválido: {tipo}")
+
+    @staticmethod
+    def anular_venta(venta_id, usuario_id):
+        """
+        Anula una venta y devuelve el stock (inverso a la venta)
+        """
+        venta = Venta.query.get(venta_id)
+        if not venta:
+            return False, "Venta no encontrada"
+            
+        if venta.anulada:
+            return False, "La venta ya está anulada"
+            
+        try:
+            # Marcar anulada
+            venta.anulada = True
+            
+            # Revertir Stock
+            for item in venta.items:
+                if item.es_receta:
+                    # Usar la explosión guardada para saber cuánto descontamos exactamente
+                    if item.explosion_detalles:
+                        try:
+                            detalles = json.loads(item.explosion_detalles)
+                            for key, info in detalles.items():
+                                # info puede tener 'ingrediente_id' o ser subreceta
+                                # Si es un ingrediente directo
+                                if 'ingrediente_id' in info:
+                                    ing_id = info['ingrediente_id']
+                                    cantidad_desc = info['cantidad_total']
+                                    
+                                    ing = Ingrediente.query.get(ing_id)
+                                    if ing:
+                                        ing.stock_actual = (ing.stock_actual or 0) + cantidad_desc
+                                
+                                # Si es subreceta, la estructura es diferente y recursiva
+                                # Pero _procesar_explosion_receta devuelve un dict plano donde
+                                # todas las hojas (ingredientes finales) deberian estar en el nivel superior 
+                                # si se procesó correctamente, O deberíamos iterar recursivamente.
+                                # Revisando _procesar_explosion_receta: 
+                                # devuelve un dict plano 'explosion' keys: f"ing_{id}" y f"sub_{id}".
+                                # Y "sub_{id}" contiene 'items_descontados' que es OTRO dict.
+                                # Debemos procesar recursivamente el JSON de devolución.
+                                
+                                elif key.startswith('sub_') and 'items_descontados' in info:
+                                    VentasServiceAvanzado._revertir_stock_recursivo(info['items_descontados'])
+
+                        except Exception as e:
+                            print(f"Error parseando explosion para item {item.id}: {e}")
+                else:
+                    # Producto simple
+                    item.producto.stock = (item.producto.stock or 0) + item.cantidad
+            
+            db.session.commit()
+            return True, "Venta anulada exitosamente"
+            
+        except Exception as e:
+            db.session.rollback()
+            return False, str(e)
+
+    @staticmethod
+    def _revertir_stock_recursivo(detalles_dict):
+        """Helper para revertir stock de estructuras anidadas en JSON"""
+        for key, info in detalles_dict.items():
+            if 'ingrediente_id' in info:
+                ing_id = info['ingrediente_id']
+                cantidad_desc = info['cantidad_total']
+                ing = Ingrediente.query.get(ing_id)
+                if ing:
+                    ing.stock_actual = (ing.stock_actual or 0) + cantidad_desc
+            elif key.startswith('sub_') and 'items_descontados' in info:
+                VentasServiceAvanzado._revertir_stock_recursivo(info['items_descontados'])

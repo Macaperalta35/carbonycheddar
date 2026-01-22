@@ -146,34 +146,44 @@ class RecetaService:
         }
     
     @staticmethod
-    def agregar_ingrediente(receta_id, usuario_id, ingrediente_id, cantidad):
+    def agregar_ingrediente(receta_id, usuario_id, ingrediente_id, cantidad, sub_receta_id=None):
         """
-        Agrega un ingrediente a una receta.
+        Agrega un ingrediente o sub-receta a una receta.
         
         Args:
-            receta_id: int - ID de la receta
+            receta_id: int - ID de la receta padre
             usuario_id: int - ID del usuario
-            ingrediente_id: int - ID del ingrediente
+            ingrediente_id: int - ID del ingrediente (opcional si hay sub_receta_id)
             cantidad: float - Cantidad a agregar
-        
-        Returns:
-            tuple: (receta_ingrediente, error_message)
+            sub_receta_id: int - ID de la sub-receta (opcional)
         """
         receta = RecetaService.obtener_receta(receta_id, usuario_id)
         
         if not receta:
             return None, 'Receta no encontrada'
         
-        ingrediente = Ingrediente.query.get(ingrediente_id)
+        # Validar que sea uno u otro
+        if not ingrediente_id and not sub_receta_id:
+             return None, 'Debe especificar ingrediente_id o sub_receta_id'
         
-        if not ingrediente:
-            return None, 'Ingrediente no encontrado'
-        
+        if ingrediente_id:
+            ingrediente = Ingrediente.query.get(ingrediente_id)
+            if not ingrediente:
+                return None, 'Ingrediente no encontrado'
+            target_filter = {'ingrediente_id': ingrediente_id}
+        else:
+            sub_receta = Receta.query.get(sub_receta_id)
+            if not sub_receta:
+                return None, 'Sub-receta no encontrada'
+            if sub_receta.id == receta.id:
+                return None, 'No se puede agregar una receta a sí misma'
+            target_filter = {'sub_receta_id': sub_receta_id}
+
         try:
-            # Verificar si el ingrediente ya está en la receta
+            # Verificar si ya está en la receta
             existente = RecetaIngrediente.query.filter_by(
                 receta_id=receta_id,
-                ingrediente_id=ingrediente_id
+                **target_filter
             ).first()
             
             if existente:
@@ -185,6 +195,7 @@ class RecetaService:
                 ri = RecetaIngrediente(
                     receta_id=receta_id,
                     ingrediente_id=ingrediente_id,
+                    sub_receta_id=sub_receta_id,
                     cantidad=cantidad
                 )
                 db.session.add(ri)

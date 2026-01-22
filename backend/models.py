@@ -14,6 +14,7 @@ class Usuario(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
     rol = db.Column(db.String(20), default='user')  # admin, manager, user
+    permisos = db.Column(db.JSON, default=list)  # Lista de permisos: ['ver_ventas', 'ver_reportes', etc]
     activo = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
@@ -31,6 +32,7 @@ class Usuario(db.Model):
             'nombre': self.nombre,
             'email': self.email,
             'rol': self.rol,
+            'permisos': self.permisos or [],
             'activo': self.activo,
             'created_at': self.created_at.isoformat()
         }
@@ -45,11 +47,13 @@ class Ingrediente(db.Model):
     unidad_medida = db.Column(db.String(50), nullable=False)  # kg, l, unidad, etc.
     costo_unitario = db.Column(db.Float, nullable=False)  # Costo por unidad actual
     costo_anterior = db.Column(db.Float, default=0)  # Historial
+    stock_actual = db.Column(db.Float, default=0)  # Stock actual disponible
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     receta_ingredientes = db.relationship('RecetaIngrediente', backref='ingrediente', lazy=True, cascade='all, delete-orphan')
     historial_costos = db.relationship('HistorialCostoIngrediente', backref='ingrediente', lazy=True, cascade='all, delete-orphan')
+    reabastecimientos = db.relationship('ReabastecimientoInventario', backref='ingrediente', lazy=True, cascade='all, delete-orphan')
     
     def to_dict(self):
         return {
@@ -58,8 +62,34 @@ class Ingrediente(db.Model):
             'descripcion': self.descripcion,
             'unidad_medida': self.unidad_medida,
             'costo_unitario': self.costo_unitario,
+            'stock_actual': self.stock_actual,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()
+        }
+
+# ============= REABASTECIMIENTO DE INVENTARIO =============
+class ReabastecimientoInventario(db.Model):
+    __tablename__ = 'reabastecimientos_inventario'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    ingrediente_id = db.Column(db.Integer, db.ForeignKey('ingredientes.id'), nullable=False)
+    cantidad = db.Column(db.Float, nullable=False)
+    costo_compra = db.Column(db.Float, nullable=False)
+    proveedor = db.Column(db.String(100))
+    observaciones = db.Column(db.String(255))
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'ingrediente_id': self.ingrediente_id,
+            'ingrediente_nombre': self.ingrediente.nombre,
+            'cantidad': self.cantidad,
+            'costo_compra': self.costo_compra,
+            'proveedor': self.proveedor,
+            'observaciones': self.observaciones,
+            'created_at': self.created_at.isoformat()
         }
 
 # ============= HISTORIAL DE COSTOS =============
@@ -98,7 +128,7 @@ class Receta(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    ingredientes = db.relationship('RecetaIngrediente', backref='receta', lazy=True, cascade='all, delete-orphan')
+    ingredientes = db.relationship('RecetaIngrediente', backref='receta', lazy=True, cascade='all, delete-orphan', foreign_keys='RecetaIngrediente.receta_id')
     
     def to_dict(self, incluir_ingredientes=True):
         datos = {
@@ -127,23 +157,41 @@ class RecetaIngrediente(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     receta_id = db.Column(db.Integer, db.ForeignKey('recetas.id'), nullable=False)
-    ingrediente_id = db.Column(db.Integer, db.ForeignKey('ingredientes.id'), nullable=False)
+    ingrediente_id = db.Column(db.Integer, db.ForeignKey('ingredientes.id'), nullable=True) # Ahora es opcional
+    sub_receta_id = db.Column(db.Integer, db.ForeignKey('recetas.id'), nullable=True) # Referencia a otra receta
     cantidad = db.Column(db.Float, nullable=False)  # Cantidad utilizada
     costo_calculado = db.Column(db.Float, default=0)  # Costo = cantidad * costo_unitario del ingrediente
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    sub_receta = db.relationship('Receta', foreign_keys=[sub_receta_id], lazy=True)
     
     def to_dict(self):
-        return {
+        datos = {
             'id': self.id,
             'receta_id': self.receta_id,
-            'ingrediente_id': self.ingrediente_id,
-            'ingrediente_nombre': self.ingrediente.nombre,
-            'ingrediente_unidad': self.ingrediente.unidad_medida,
             'cantidad': self.cantidad,
-            'costo_unitario': self.ingrediente.costo_unitario,
             'costo_calculado': round(self.costo_calculado, 2),
             'created_at': self.created_at.isoformat()
         }
+        
+        if self.ingrediente_id:
+            datos.update({
+                'tipo': 'ingrediente',
+                'item_id': self.ingrediente_id,
+                'nombre': self.ingrediente.nombre,
+                'unidad': self.ingrediente.unidad_medida,
+                'costo_unitario': self.ingrediente.costo_unitario
+            })
+        elif self.sub_receta_id:
+             datos.update({
+                'tipo': 'subreceta',
+                'item_id': self.sub_receta_id,
+                'nombre': self.sub_receta.nombre,
+                'unidad': 'unidad', # Las recetas se miden por unidad/porción
+                'costo_unitario': self.sub_receta.costo_total
+            })
+            
+        return datos
 
 # ============= PRODUCTOS LEGACY =============
 class Producto(db.Model):
@@ -170,12 +218,14 @@ class Producto(db.Model):
 # ============= VENTAS (LEGACY) =============
 class Venta(db.Model):
     __tablename__ = 'ventas'
-    
+
     id = db.Column(db.Integer, primary_key=True)
-    usuario = db.Column(db.String(50))
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=True) # ID Usuario
+    usuario = db.Column(db.String(50)) # Nombre usuario (legacy)
     cliente_nombre = db.Column(db.String(100))
     numero_mesa = db.Column(db.String(20))
     subtotal = db.Column(db.Float, default=0)
+    descuento = db.Column(db.Float, default=0)
     iva = db.Column(db.Float, default=0)
     propina = db.Column(db.Float, default=0)
     total = db.Column(db.Float, default=0)
@@ -190,6 +240,7 @@ class Venta(db.Model):
             'cliente_nombre': self.cliente_nombre,
             'numero_mesa': self.numero_mesa,
             'subtotal': self.subtotal,
+            'descuento': self.descuento,
             'iva': self.iva,
             'propina': self.propina,
             'total': self.total,
@@ -265,7 +316,7 @@ class Comanda(db.Model):
     __tablename__ = 'comandas'
     
     id = db.Column(db.Integer, primary_key=True)
-    venta_id = db.Column(db.Integer, db.ForeignKey('ventas.id'), nullable=False, unique=True)
+    venta_id = db.Column(db.Integer, db.ForeignKey('ventas.id'), nullable=False, unique=False)
     tipo_comanda = db.Column(db.String(20), nullable=False)  # 'cocina' o 'caja'
     contenido_html = db.Column(db.Text, nullable=False)  # HTML del comprobante
     contenido_texto = db.Column(db.Text, nullable=False)  # Versión texto para impresora térmica

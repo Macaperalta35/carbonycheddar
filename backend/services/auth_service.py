@@ -100,9 +100,14 @@ class AuthService:
                 return jsonify({'error': 'Token inválido o expirado'}), 401
             
             # Almacenar datos en request para usar en la función
-            request.usuario_id = payload['usuario_id']
-            request.usuario_rol = payload['rol']
-            request.usuario_email = payload['email']
+            from models import Usuario
+            usuario = Usuario.query.get(payload['usuario_id'])
+            
+            if not usuario or not usuario.activo:
+                 return jsonify({'error': 'Usuario no encontrado o inactivo'}), 401
+
+            request.usuario = usuario
+            request.usuario_id = usuario.id # Mantener compatibilidad
             
             return f(*args, **kwargs)
         

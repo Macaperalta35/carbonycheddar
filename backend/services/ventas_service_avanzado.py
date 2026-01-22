@@ -124,6 +124,7 @@ class VentasServiceAvanzado:
             usuario_nombre = usuario.nombre if usuario else f"Usuario {usuario_id}"
             
             venta = Venta(
+                usuario_id=usuario_id,
                 usuario=usuario_nombre,
                 cliente_nombre=cliente_nombre,
                 numero_mesa=numero_mesa,
@@ -161,9 +162,8 @@ class VentasServiceAvanzado:
             for ingrediente_id, cantidad_total in descuentos_inventario.items():
                 ingrediente = Ingrediente.query.get(ingrediente_id)
                 if ingrediente:
-                    # Los ingredientes no tienen "stock" en el sentido tradicional
-                    # Pero registramos que fueron usados
-                    pass
+                    # Descontar del stock actual
+                    ingrediente.stock_actual = (ingrediente.stock_actual or 0) - cantidad_total
             
             db.session.commit()
             
@@ -193,32 +193,57 @@ class VentasServiceAvanzado:
     @staticmethod
     def _procesar_explosion_receta(receta, cantidad_recetas, descuentos_tracking):
         """
-        Procesa la explosión de una receta
+        Procesa la explosión de una receta de forma recursiva (maneja sub-recetas)
         
         Returns:
             dict con detalles de ingredientes descontados
         """
         explosion = {}
         
-        for receta_ingrediente in receta.ingredientes:
-            ingrediente_id = receta_ingrediente.ingrediente_id
-            cantidad_a_descontar = receta_ingrediente.cantidad * cantidad_recetas
+        for item in receta.ingredientes:
+            cantidad_total_item = item.cantidad * cantidad_recetas
             
-            # Tracking de total descontado por ingrediente
-            if ingrediente_id not in descuentos_tracking:
-                descuentos_tracking[ingrediente_id] = 0
-            descuentos_tracking[ingrediente_id] += cantidad_a_descontar
-            
-            # Detalles de explosión
-            explosion[str(ingrediente_id)] = {
-                'ingrediente_id': ingrediente_id,
-                'ingrediente_nombre': receta_ingrediente.ingrediente.nombre,
-                'unidad': receta_ingrediente.ingrediente.unidad_medida,
-                'cantidad_por_receta': receta_ingrediente.cantidad,
-                'cantidad_total': cantidad_a_descontar,
-                'costo_unitario': receta_ingrediente.ingrediente.costo_unitario,
-                'costo_total': round(cantidad_a_descontar * receta_ingrediente.ingrediente.costo_unitario, 2)
-            }
+            if item.ingrediente_id:
+                # Es un ingrediente directo
+                ingrediente_id = item.ingrediente_id
+                
+                # Tracking de total descontado por ingrediente
+                if ingrediente_id not in descuentos_tracking:
+                    descuentos_tracking[ingrediente_id] = 0
+                descuentos_tracking[ingrediente_id] += cantidad_total_item
+                
+                # Detalles de explosión
+                clave = f"ing_{ingrediente_id}"
+                if clave not in explosion:
+                    explosion[clave] = {
+                        'ingrediente_id': ingrediente_id,
+                        'ingrediente_nombre': item.ingrediente.nombre,
+                        'unidad': item.ingrediente.unidad_medida,
+                        'cantidad_por_receta': item.cantidad,
+                        'cantidad_total': 0, # Se suma abajo
+                        'costo_unitario': item.ingrediente.costo_unitario,
+                        'costo_total': 0
+                    }
+                
+                explosion[clave]['cantidad_total'] += cantidad_total_item
+                explosion[clave]['costo_total'] = round(explosion[clave]['cantidad_total'] * item.ingrediente.costo_unitario, 2)
+                
+            elif item.sub_receta_id:
+                # Es una sub-receta: Recursión
+                sub_receta = item.sub_receta
+                sub_explosion = VentasServiceAvanzado._procesar_explosion_receta(
+                    sub_receta, cantidad_total_item, descuentos_tracking
+                )
+                
+                # Agregar detalles de la sub-receta (solo informativo o visualización)
+                # La explosión real (stock) ocurre dentro de la llamada recursiva al llenar 'descuentos_tracking'
+                clave = f"sub_{sub_receta.id}"
+                explosion[clave] = {
+                    'tipo': 'subreceta',
+                    'nombre': sub_receta.nombre,
+                    'cantidad': cantidad_total_item,
+                    'items_descontados': sub_explosion
+                }
         
         return explosion
 

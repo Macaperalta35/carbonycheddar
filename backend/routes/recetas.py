@@ -231,14 +231,18 @@ def agregar_ingrediente_a_receta(receta_id):
         if not datos:
             return jsonify({'error': 'No se proporcionaron datos'}), 400
         
-        if 'ingrediente_id' not in datos or 'cantidad' not in datos:
-            return jsonify({'error': 'Campos requeridos: ingrediente_id, cantidad'}), 400
+        if 'ingrediente_id' not in datos and 'sub_receta_id' not in datos:
+            return jsonify({'error': 'Debe enviar ingrediente_id o sub_receta_id'}), 400
+        
+        if 'cantidad' not in datos:
+            return jsonify({'error': 'Campo requerido: cantidad'}), 400
         
         ri, error = RecetaService.agregar_ingrediente(
             receta_id,
             request.usuario_id,
-            datos['ingrediente_id'],
-            datos['cantidad']
+            datos.get('ingrediente_id'),
+            datos['cantidad'],
+            datos.get('sub_receta_id')
         )
         
         if error:

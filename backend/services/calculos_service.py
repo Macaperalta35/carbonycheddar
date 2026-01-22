@@ -19,8 +19,14 @@ class CalculoCostos:
         """
         costo_total = 0.0
         for ing in ingredientes:
-            # Costo = cantidad * costo_unitario del ingrediente
-            costo = ing.cantidad * ing.ingrediente.costo_unitario
+            costo = 0
+            if ing.ingrediente_id:
+                # Costo = cantidad * costo_unitario del ingrediente
+                costo = ing.cantidad * ing.ingrediente.costo_unitario
+            elif ing.sub_receta_id:
+                # Costo = cantidad * costo_total de la sub-receta
+                costo = ing.cantidad * ing.sub_receta.costo_total
+            
             ing.costo_calculado = costo
             costo_total += costo
         

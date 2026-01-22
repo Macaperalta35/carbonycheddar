@@ -27,7 +27,7 @@ export default function Dashboard() {
       }
 
       const datosRecetas = await recetasService.listar();
-      setRecetas(datosRecetas.recetas || []);
+      setRecetas(datosRecetas?.recetas || datosRecetas?.data || []);
 
       const datosReporte = await reportesService.obtenerResumenRecetas();
       setReporte(datosReporte);
@@ -110,6 +110,12 @@ export default function Dashboard() {
           🛒 Punto de Venta
         </button>
         <button
+          onClick={() => navigate('/ventas/historial')}
+          style={styles.tabButton}
+        >
+          🕒 Historial y Notas
+        </button>
+        <button
           onClick={() => navigate('/reportes-ventas')}
           style={styles.tabButton}
         >
@@ -124,6 +130,20 @@ export default function Dashboard() {
         >
           ⚙️ Configuración
         </button>
+        <button
+          onClick={() => navigate('/inventario')}
+          style={styles.tabButton}
+        >
+          📦 Inventario
+        </button>
+        {usuario?.rol === 'admin' && (
+          <button
+            onClick={() => navigate('/admin/usuarios')}
+            style={{ ...styles.tabButton, color: '#d32f2f' }}
+          >
+            👥 Usuarios
+          </button>
+        )}
       </div>
 
       {/* Content */}
@@ -155,31 +175,31 @@ export default function Dashboard() {
                       <div style={styles.stat}>
                         <span style={styles.label}>Costo Total:</span>
                         <span style={styles.value}>
-                          ${receta.costo_total.toFixed(2)}
+                          ${(receta.costo_total || 0).toFixed(2)}
                         </span>
                       </div>
                       <div style={styles.stat}>
                         <span style={styles.label}>Costo/Porción:</span>
                         <span style={styles.value}>
-                          ${receta.costo_por_porcion.toFixed(2)}
+                          ${(receta.costo_por_porcion || 0).toFixed(2)}
                         </span>
                       </div>
                       <div style={styles.stat}>
                         <span style={styles.label}>Precio Venta:</span>
                         <span style={styles.value}>
-                          ${receta.precio_venta.toFixed(2)}
+                          ${(receta.precio_venta || 0).toFixed(2)}
                         </span>
                       </div>
                       <div
                         style={{
                           ...styles.stat,
                           background:
-                            receta.margen_porcentaje > 30 ? '#c8e6c9' : '#ffccbc'
+                            (receta.margen_porcentaje || 0) > 30 ? '#c8e6c9' : '#ffccbc'
                         }}
                       >
                         <span style={styles.label}>Margen:</span>
                         <span style={styles.value}>
-                          {receta.margen_porcentaje.toFixed(1)}%
+                          {(receta.margen_porcentaje || 0).toFixed(1)}%
                         </span>
                       </div>
                     </div>
@@ -209,25 +229,25 @@ export default function Dashboard() {
                 <div style={styles.reporteContent}>
                   <div style={styles.reporteItem}>
                     <span>Total de Recetas:</span>
-                    <strong>{reporte.total_recetas}</strong>
+                    <strong>{reporte.total_recetas || 0}</strong>
                   </div>
                   <div style={styles.reporteItem}>
                     <span>Costo Promedio:</span>
-                    <strong>${reporte.costo_total_promedio?.toFixed(2)}</strong>
+                    <strong>${(reporte.costo_total_promedio || 0).toFixed(2)}</strong>
                   </div>
                   <div style={styles.reporteItem}>
                     <span>Margen Promedio:</span>
-                    <strong>{reporte.margen_promedio?.toFixed(1)}%</strong>
+                    <strong>{(reporte.margen_promedio || 0).toFixed(1)}%</strong>
                   </div>
                   <div style={styles.reporteItem}>
                     <span>Utilidad Total:</span>
                     <strong
                       style={{
                         color:
-                          reporte.utilidad_total > 0 ? '#4caf50' : '#f44336'
+                          (reporte.utilidad_total || 0) > 0 ? '#4caf50' : '#f44336'
                       }}
                     >
-                      ${reporte.utilidad_total?.toFixed(2)}
+                      ${(reporte.utilidad_total || 0).toFixed(2)}
                     </strong>
                   </div>
                 </div>
@@ -245,12 +265,12 @@ export default function Dashboard() {
             <div style={styles.configCard}>
               <div style={styles.configSection}>
                 <h3>Nombre del Negocio</h3>
-                <p style={{color: '#666', marginBottom: '15px'}}>
+                <p style={{ color: '#666', marginBottom: '15px' }}>
                   Configura el nombre de tu negocio que aparecerá en documentos y reportes
                 </p>
-                
+
                 <div style={styles.formGroup}>
-                  <label style={{display: 'block', marginBottom: '8px', fontWeight: 'bold'}}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
                     Nombre del Negocio
                   </label>
                   <input
@@ -262,15 +282,15 @@ export default function Dashboard() {
                   />
                 </div>
 
-                <button 
+                <button
                   onClick={guardarNombreNegocio}
                   style={styles.buttonPrimary}
                 >
                   💾 Guardar Cambios
                 </button>
 
-                <div style={{marginTop: '20px', padding: '15px', background: '#e3f2fd', borderRadius: '4px'}}>
-                  <p style={{margin: 0, color: '#1565c0', fontSize: '14px'}}>
+                <div style={{ marginTop: '20px', padding: '15px', background: '#e3f2fd', borderRadius: '4px' }}>
+                  <p style={{ margin: 0, color: '#1565c0', fontSize: '14px' }}>
                     <strong>Nombre actual del negocio:</strong> {nombreNegocio}
                   </p>
                 </div>

@@ -277,3 +277,64 @@ def reporte_detallado():
             'success': False,
             'message': f'Error: {str(e)}'
         }), 500
+
+# ======================== HISTORIAL Y EDICIÓN ========================
+
+@ventas_bp.route('/historial', methods=['GET'])
+@AuthService.requerir_autenticacion
+def historial_ventas():
+    """
+    Historial de ventas con filtros paginados
+    """
+    try:
+        filtros = {
+            'id': request.args.get('id', type=int),
+            'fecha_inicio': request.args.get('fecha_inicio'),
+            'fecha_fin': request.args.get('fecha_fin'),
+            'cliente': request.args.get('cliente')
+        }
+        pagina = request.args.get('pagina', 1, type=int)
+        por_pagina = request.args.get('por_pagina', 20, type=int)
+        
+        resultado = VentasServiceAvanzado.listar_ventas(filtros, pagina, por_pagina)
+        
+        return jsonify({
+            'success': True,
+            'data': resultado
+        }), 200
+        
+    except Exception as e:
+        print(traceback.format_exc())
+        return jsonify({
+            'success': False,
+            'message': f'Error: {str(e)}'
+        }), 500
+
+@ventas_bp.route('/<int:venta_id>', methods=['PUT'])
+@AuthService.requerir_autenticacion
+def actualizar_venta(venta_id):
+    """
+    Actualizar datos de cabecera de la venta
+    """
+    try:
+        datos = request.get_json()
+        resultado = VentasServiceAvanzado.actualizar_venta_cabecera(venta_id, datos)
+        
+        return jsonify({
+            'success': True,
+            'message': 'Venta actualizada',
+            'data': resultado
+        }), 200
+        
+    except ValueError as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 404
+        
+    except Exception as e:
+        print(traceback.format_exc())
+        return jsonify({
+            'success': False,
+            'message': f'Error: {str(e)}'
+        }), 500

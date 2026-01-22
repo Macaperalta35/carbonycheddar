@@ -15,11 +15,9 @@ export default function RecetaForm() {
     precio_venta: 0,
     ingredientes: []
   });
-  const [ingredientes, setIngredientes] = useState([]);
-  const [ingredienteSeleccionado, setIngredienteSeleccionado] = useState('');
-  const [cantidadIngrediente, setCantidadIngrediente] = useState('');
-  const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState('');
+  const [subRecetas, setSubRecetas] = useState([]);
+  const [tipoSeleccion, setTipoSeleccion] = useState('ingrediente'); // 'ingrediente' | 'subreceta'
+  const [itemSeleccionado, setItemSeleccionado] = useState(''); // ID del ingrediente o receta
 
   useEffect(() => {
     cargarDatos();
@@ -27,8 +25,11 @@ export default function RecetaForm() {
 
   const cargarDatos = async () => {
     try {
-      const datosIngredientes = await ingredientesService.listar();
+      const datosIngredientes = await ingredientesService.listar(1, 100); // Traer más
       setIngredientes(datosIngredientes.ingredientes || []);
+
+      const datosRecetas = await recetasService.listar(1, 100);
+      setSubRecetas(datosRecetas.recetas || []);
 
       if (recetaId) {
         const datosReceta = await recetasService.obtener(recetaId);
@@ -50,23 +51,28 @@ export default function RecetaForm() {
     });
   };
 
-  const agregarIngrediente = async () => {
-    if (!ingredienteSeleccionado || !cantidadIngrediente) {
-      setError('Selecciona ingrediente y cantidad');
+  const agregarItem = async () => {
+    if (!itemSeleccionado || !cantidadIngrediente) {
+      setError('Selecciona item y cantidad');
       return;
     }
 
     try {
+      const ingredienteId = tipoSeleccion === 'ingrediente' ? parseInt(itemSeleccionado) : null;
+      const subRecetaId = tipoSeleccion === 'subreceta' ? parseInt(itemSeleccionado) : null;
+
       const datosReceta = await recetasService.agregarIngrediente(
         receta.id,
-        parseInt(ingredienteSeleccionado),
-        parseFloat(cantidadIngrediente)
+        ingredienteId,
+        parseFloat(cantidadIngrediente),
+        subRecetaId
       );
       setReceta(datosReceta.receta);
-      setIngredienteSeleccionado('');
+      setItemSeleccionado('');
       setCantidadIngrediente('');
     } catch (err) {
-      setError('Error agregando ingrediente');
+      console.error(err);
+      setError('Error agregando item: ' + (err.response?.data?.error || err.message));
     }
   };
 
@@ -112,9 +118,16 @@ export default function RecetaForm() {
     return <div style={styles.container}>Cargando...</div>;
   }
 
-  const unidadIngredienteSeleccionado = ingredientes.find(
-    (i) => i.id === parseInt(ingredienteSeleccionado)
-  )?.unidad_medida || '';
+  // Filtrar recetas para evitar auto-referencia si estamos editando
+  const recetasDisponibles = subRecetas.filter(r => r.id !== parseInt(recetaId || 0));
+
+  let unidadLabel = 'Unidad';
+  if (tipoSeleccion === 'ingrediente') {
+    const ing = ingredientes.find(i => i.id === parseInt(itemSeleccionado));
+    unidadLabel = ing?.unidad_medida || '';
+  } else {
+    unidadLabel = 'Porciones';
+  }
 
   return (
     <div style={styles.container}>
@@ -177,30 +190,53 @@ export default function RecetaForm() {
           </div>
         </div>
 
-        {/* Ingredientes */}
+        {/* Ingredientes y Sub-recetas */}
         <div style={styles.section}>
-          <h2>Ingredientes</h2>
+          <h2>Composición (Ingredientes / Sub-recetas)</h2>
+
+          <div style={styles.toggleContainer}>
+            <button
+              style={tipoSeleccion === 'ingrediente' ? styles.toggleActive : styles.toggleInactive}
+              onClick={() => { setTipoSeleccion('ingrediente'); setItemSeleccionado(''); }}
+            >
+              Ingrediente
+            </button>
+            <button
+              style={tipoSeleccion === 'subreceta' ? styles.toggleActive : styles.toggleInactive}
+              onClick={() => { setTipoSeleccion('subreceta'); setItemSeleccionado(''); }}
+            >
+              Sub-receta
+            </button>
+          </div>
 
           <div style={styles.formRow}>
             <div style={styles.formGroup}>
-              <label>Selecciona Ingrediente:</label>
+              <label>Selecciona {tipoSeleccion === 'ingrediente' ? 'Ingrediente' : 'Sub-receta'}:</label>
               <select
-                value={ingredienteSeleccionado}
-                onChange={(e) => setIngredienteSeleccionado(e.target.value)}
+                value={itemSeleccionado}
+                onChange={(e) => setItemSeleccionado(e.target.value)}
                 style={styles.input}
               >
                 <option value="">-- Selecciona --</option>
-                {ingredientes.map((ing) => (
-                  <option key={ing.id} value={ing.id}>
-                    {ing.nombre} ({ing.unidad_medida})
-                  </option>
-                ))}
+                {tipoSeleccion === 'ingrediente' ? (
+                  ingredientes.map((ing) => (
+                    <option key={ing.id} value={ing.id}>
+                      {ing.nombre} ({ing.unidad_medida})
+                    </option>
+                  ))
+                ) : (
+                  recetasDisponibles.map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.nombre} (Costo: ${r.costo_por_porcion})
+                    </option>
+                  ))
+                )}
               </select>
             </div>
 
             <div style={styles.formGroup}>
               <label>
-                Cantidad ({unidadIngredienteSeleccionado}):
+                Cantidad ({unidadLabel}):
               </label>
               <input
                 type="number"
@@ -213,7 +249,7 @@ export default function RecetaForm() {
             </div>
 
             <button
-              onClick={agregarIngrediente}
+              onClick={agregarItem}
               style={styles.buttonAgregar}
             >
               + Agregar
@@ -226,7 +262,8 @@ export default function RecetaForm() {
               <table style={styles.table}>
                 <thead>
                   <tr>
-                    <th>Ingrediente</th>
+                    <th>Tipo</th>
+                    <th>Nombre</th>
                     <th>Cantidad</th>
                     <th>Costo Unitario</th>
                     <th>Costo Total</th>
@@ -236,10 +273,17 @@ export default function RecetaForm() {
                 <tbody>
                   {receta.ingredientes.map((ing) => (
                     <tr key={ing.id}>
-                      <td>{ing.ingrediente_nombre}</td>
-                      <td>{ing.cantidad} {ing.ingrediente_unidad}</td>
-                      <td>${ing.costo_unitario.toFixed(2)}</td>
-                      <td>${ing.costo_calculado.toFixed(2)}</td>
+                      <td>
+                        {ing.tipo === 'subreceta' ? (
+                          <span style={styles.badgeReceta}>Sub-receta</span>
+                        ) : (
+                          <span style={styles.badgeIngrediente}>Ingrediente</span>
+                        )}
+                      </td>
+                      <td>{ing.nombre}</td>
+                      <td>{ing.cantidad} {ing.unidad}</td>
+                      <td>${ing.costo_unitario?.toFixed(2)}</td>
+                      <td>${ing.costo_calculado?.toFixed(2)}</td>
                       <td>
                         <button
                           onClick={() => eliminarIngrediente(ing.id)}
@@ -409,5 +453,43 @@ const styles = {
     borderRadius: '4px',
     cursor: 'pointer',
     fontSize: '12px'
+  },
+  toggleContainer: {
+    display: 'flex',
+    gap: '10px',
+    marginBottom: '15px'
+  },
+  toggleActive: {
+    padding: '8px 16px',
+    background: '#667eea',
+    color: 'white',
+    border: 'none',
+    borderRadius: '20px',
+    cursor: 'pointer',
+    fontWeight: 'bold'
+  },
+  toggleInactive: {
+    padding: '8px 16px',
+    background: '#eee',
+    color: '#666',
+    border: 'none',
+    borderRadius: '20px',
+    cursor: 'pointer'
+  },
+  badgeIngrediente: {
+    background: '#e3f2fd',
+    color: '#1565c0',
+    padding: '2px 8px',
+    borderRadius: '10px',
+    fontSize: '0.8em',
+    fontWeight: 'bold'
+  },
+  badgeReceta: {
+    background: '#fff3e0',
+    color: '#ef6c00',
+    padding: '2px 8px',
+    borderRadius: '10px',
+    fontSize: '0.8em',
+    fontWeight: 'bold'
   }
 };

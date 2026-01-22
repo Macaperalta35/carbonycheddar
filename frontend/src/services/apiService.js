@@ -63,12 +63,12 @@ export const authService = {
       email,
       password
     });
-    
+
     if (response.data.token) {
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('usuario', JSON.stringify(response.data.usuario));
     }
-    
+
     return response.data;
   },
 
@@ -114,7 +114,7 @@ export const recetasService = {
    * Listar todas las recetas del usuario
    */
   listar: async (pagina = 1, porPagina = 10) => {
-    const response = await apiClient.get('/recetas', {
+    const response = await apiClient.get('/recetas-usuario', {
       params: { pagina, por_pagina: porPagina }
     });
     return response.data;
@@ -160,13 +160,14 @@ export const recetasService = {
   /**
    * Agregar un ingrediente a una receta
    */
-  agregarIngrediente: async (recetaId, ingredienteId, cantidad) => {
+  agregarIngrediente: async (recetaId, ingredienteId, cantidad, subRecetaId = null) => {
+    const payload = { cantidad };
+    if (ingredienteId) payload.ingrediente_id = ingredienteId;
+    if (subRecetaId) payload.sub_receta_id = subRecetaId;
+
     const response = await apiClient.post(
       `/recetas/${recetaId}/ingredientes`,
-      {
-        ingrediente_id: ingredienteId,
-        cantidad
-      }
+      payload
     );
     return response.data;
   },

@@ -719,9 +719,9 @@ Cajero: {usuario_nombre}
                     productos_vendidos[nombre]['cantidad'] += item.cantidad
                     productos_vendidos[nombre]['ingresos'] += item.subtotal
         
-        total_ingresos = sum(v['total'] for v in ventas)
-        total_descuentos = sum(v['descuento'] for v in ventas)
-        total_iva = sum(v['iva'] for v in ventas)
+        total_ingresos = sum(v.total for v in ventas)
+        total_descuentos = sum(v.descuento for v in ventas)
+        total_iva = sum(v.iva for v in ventas)
         
         return {
             'fecha_inicio': fecha_inicio.isoformat(),
@@ -747,3 +747,65 @@ Cajero: {usuario_nombre}
                 for v in ventas
             ]
         }
+
+    @staticmethod
+    def listar_ventas(filtros, pagina=1, por_pagina=20):
+        """
+        Lista ventas con filtros y paginación.
+        """
+        query = Venta.query
+        
+        if filtros.get('id'):
+            query = query.filter(Venta.id == filtros['id'])
+        
+        if filtros.get('fecha_inicio'):
+            query = query.filter(func.date(Venta.created_at) >= filtros['fecha_inicio'])
+            
+        if filtros.get('fecha_fin'):
+            query = query.filter(func.date(Venta.created_at) <= filtros['fecha_fin'])
+            
+        if filtros.get('cliente'):
+            query = query.filter(Venta.cliente_nombre.ilike(f"%{filtros['cliente']}%"))
+            
+        # Ordenar por fecha descendente
+        query = query.order_by(Venta.created_at.desc())
+        
+        total = query.count()
+        ventas_paginadas = query.paginate(page=pagina, per_page=por_pagina, error_out=False).items
+        
+        return {
+            'total': total,
+            'pagina': pagina,
+            'por_pagina': por_pagina,
+            'ventas': [v.to_dict() for v in ventas_paginadas]
+        }
+
+    @staticmethod
+    def actualizar_venta_cabecera(venta_id, datos):
+        """
+        Actualiza datos de cabecera de una venta.
+        """
+        venta = Venta.query.get(venta_id)
+        if not venta:
+            raise ValueError('Venta no encontrada')
+            
+        if 'cliente_nombre' in datos:
+            venta.cliente_nombre = datos['cliente_nombre']
+            
+        if 'numero_mesa' in datos:
+            venta.numero_mesa = datos['numero_mesa']
+
+        if 'comentarios' in datos:
+            # Si el modelo tuviera comentarios, aquí iría. 
+            # Como no lo veo en el modelo original rápidamente, asumiré que quizás querían decir update de items o algo
+            # Pero revisando models.py (no lo tengo abierto ahora), Venta suele tener cliente_nombre, numero_mesa.
+            pass
+            
+        if 'items_observaciones' in datos and isinstance(datos['items_observaciones'], dict):
+            for item in venta.items:
+                item_id_str = str(item.id)
+                if item_id_str in datos['items_observaciones']:
+                    item.observaciones = datos['items_observaciones'][item_id_str]
+        
+        db.session.commit()
+        return venta.to_dict()

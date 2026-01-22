@@ -1,0 +1,102 @@
+/* Estilos Globales, Impresión y Responsividad */
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ================== IMPRESIÓN ================== */
+@media print {
+  /* Ocultar elementos de navegación, botones y headers */
+  header, nav, button, .no-print, .tabs-container {
+    display: none !important;
+  }
+  
+  /* Resetear fondos y colores */
+  body, .container, .modal, .modal-content {
+    background: white !important;
+    color: black !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  
+  /* Asegurar que el contenido de la comanda sea visible */
+  .printable-content {
+    visibility: visible;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+}
+
+/* ================== RESPONSIVIDAD (Móvil y Tablet) ================== */
+@media screen and (max-width: 768px) {
+  /* Contenedores principales */
+  div[style*="gridTemplateColumns"] {
+    grid-template-columns: 1fr !important; /* Stack columns */
+  }
+  
+  /* Ajustes de Dashboard */
+  div[style*="tabsContainer"] {
+    flex-wrap: wrap;
+    padding: 10px;
+  }
+  
+  button[style*="tabButton"] {
+    padding: 10px;
+    font-size: 13px;
+    flex: 1 1 45%; /* 2 botones por fila */
+  }
+  
+  /* Tablas responsivas */
+  div[style*="tableContainer"] {
+    overflow-x: auto;
+  }
+  
+  table {
+    min-width: 600px; /* Forzar scroll horizontal en tablas */
+  }
+  
+  /* Modales */
+  div[style*="modalContent"] {
+    width: 95% !important;
+    max-height: 95vh;
+    padding: 15px !important;
+  }
+  
+  /* POS (Ventas) */
+  .main-content {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .left-panel, .right-panel {
+    width: 100%;
+  }
+  
+  /* Botones grandes para touch */
+  button {
+    min-height: 44px; /* Tamaño mínimo touch target */
+  }
+}
+
+@media screen and (max-width: 480px) {
+  /* Ajustes extra para móviles pequeños */
+  h1 {
+    font-size: 1.5em !important;
+  }
+  
+  button[style*="tabButton"] {
+    flex: 1 1 100%; /* 1 botón por fila */
+  }
+}

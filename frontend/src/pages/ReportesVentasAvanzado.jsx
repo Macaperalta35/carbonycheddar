@@ -14,7 +14,7 @@ const ReportesVentasAvanzado = () => {
   const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0]);
   const [fechaInicio, setFechaInicio] = useState(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
   const [fechaFin, setFechaFin] = useState(new Date().toISOString().split('T')[0]);
-  
+
   const [reporte, setReporte] = useState(null);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState(null);
@@ -75,38 +75,39 @@ const ReportesVentasAvanzado = () => {
 
   const generarCSVHora = () => {
     let csv = 'Hora,Cantidad Ventas,Total Ingresos,Ticket Promedio\n';
-    reporte.horas.forEach(([hora, datos]) => {
-      csv += `${hora},${datos.cantidad_ventas},${datos.total_ingresos.toFixed(2)},${datos.ticket_promedio.toFixed(2)}\n`;
+    (reporte.horas || []).forEach(([hora, datos]) => {
+      csv += `${hora},${datos.cantidad_ventas || 0},${(datos.total_ingresos || 0).toFixed(2)},${(datos.ticket_promedio || 0).toFixed(2)}\n`;
     });
     return csv;
   };
 
   const generarCSVDia = () => {
     let csv = 'Fecha,Cantidad Ventas,Total Ingresos,Total Descuentos,Ticket Promedio\n';
-    reporte.dias.forEach(([dia, datos]) => {
-      csv += `${dia},${datos.cantidad_ventas},${datos.total_ingresos.toFixed(2)},${datos.total_descuentos.toFixed(2)},${datos.ticket_promedio.toFixed(2)}\n`;
+    (reporte.dias || []).forEach(([dia, datos]) => {
+      csv += `${dia},${datos.cantidad_ventas || 0},${(datos.total_ingresos || 0).toFixed(2)},${(datos.total_descuentos || 0).toFixed(2)},${(datos.ticket_promedio || 0).toFixed(2)}\n`;
     });
     return csv;
   };
 
   const generarCSVDetallado = () => {
     let csv = 'Resumen General\n';
-    csv += `Cantidad de Ventas,${reporte.resumen.cantidad_ventas}\n`;
-    csv += `Total Ingresos,${reporte.resumen.total_ingresos.toFixed(2)}\n`;
-    csv += `Total Descuentos,${reporte.resumen.total_descuentos.toFixed(2)}\n`;
-    csv += `Total IVA,${reporte.resumen.total_iva.toFixed(2)}\n`;
-    csv += `Ticket Promedio,${reporte.resumen.ticket_promedio.toFixed(2)}\n\n`;
+    const resumen = reporte.resumen || {};
+    csv += `Cantidad de Ventas,${resumen.cantidad_ventas || 0}\n`;
+    csv += `Total Ingresos,${(resumen.total_ingresos || 0).toFixed(2)}\n`;
+    csv += `Total Descuentos,${(resumen.total_descuentos || 0).toFixed(2)}\n`;
+    csv += `Total IVA,${(resumen.total_iva || 0).toFixed(2)}\n`;
+    csv += `Ticket Promedio,${(resumen.ticket_promedio || 0).toFixed(2)}\n\n`;
 
     csv += 'Productos Vendidos\n';
     csv += 'Producto,Cantidad,Ingresos\n';
-    Object.entries(reporte.productos).forEach(([nombre, datos]) => {
-      csv += `${nombre},${datos.cantidad},${datos.ingresos.toFixed(2)}\n`;
+    Object.entries(reporte.productos || {}).forEach(([nombre, datos]) => {
+      csv += `${nombre},${datos.cantidad || 0},${(datos.ingresos || 0).toFixed(2)}\n`;
     });
 
     csv += '\nRecetas Vendidas\n';
     csv += 'Receta,Cantidad,Ingresos,Costo\n';
-    Object.entries(reporte.recetas).forEach(([nombre, datos]) => {
-      csv += `${nombre},${datos.cantidad},${datos.ingresos.toFixed(2)},${datos.costo.toFixed(2)}\n`;
+    Object.entries(reporte.recetas || {}).forEach(([nombre, datos]) => {
+      csv += `${nombre},${datos.cantidad || 0},${(datos.ingresos || 0).toFixed(2)},${(datos.costo || 0).toFixed(2)}\n`;
     });
 
     return csv;
@@ -212,15 +213,15 @@ const ReportesVentasAvanzado = () => {
           <div style={styles.metricas}>
             <div style={styles.metrica}>
               <strong>Total Ventas</strong>
-              <p>{reporte.total_ventas}</p>
+              <p>{reporte.total_ventas || 0}</p>
             </div>
             <div style={styles.metrica}>
               <strong>Total Ingresos</strong>
-              <p>${reporte.total_ingresos.toFixed(2)}</p>
+              <p>${(reporte.total_ingresos || 0).toFixed(2)}</p>
             </div>
             <div style={styles.metrica}>
               <strong>Total Items</strong>
-              <p>{reporte.total_items}</p>
+              <p>{reporte.total_items || 0}</p>
             </div>
           </div>
 
@@ -236,25 +237,25 @@ const ReportesVentasAvanzado = () => {
                 </tr>
               </thead>
               <tbody>
-                {reporte.horas.map(([hora, datos]) => (
+                {(reporte.horas || []).map(([hora, datos]) => (
                   <tr key={hora}>
                     <td>{hora}</td>
-                    <td>{datos.cantidad_ventas}</td>
-                    <td>${datos.total_ingresos.toFixed(2)}</td>
-                    <td>${datos.ticket_promedio.toFixed(2)}</td>
+                    <td>{datos.cantidad_ventas || 0}</td>
+                    <td>${(datos.total_ingresos || 0).toFixed(2)}</td>
+                    <td>${(datos.ticket_promedio || 0).toFixed(2)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
 
-          {reporte.horas.length > 0 && (
+          {(reporte.horas || []).length > 0 && (
             <div style={styles.grafico}>
               <h3>Ingresos por Hora</h3>
               <div style={{ display: 'flex', alignItems: 'flex-end', gap: '5px', height: '200px' }}>
-                {reporte.horas.map(([hora, datos]) => {
-                  const maxIngresos = Math.max(...reporte.horas.map(h => h[1].total_ingresos));
-                  const altura = (datos.total_ingresos / maxIngresos) * 150 || 5;
+                {(reporte.horas || []).map(([hora, datos]) => {
+                  const maxIngresos = Math.max(...(reporte.horas || []).map(h => h[1].total_ingresos || 0)) || 1;
+                  const altura = ((datos.total_ingresos || 0) / maxIngresos) * 150 || 5;
                   return (
                     <div key={hora} style={{ textAlign: 'center', flex: 1 }}>
                       <div
@@ -264,7 +265,7 @@ const ReportesVentasAvanzado = () => {
                           marginBottom: '5px',
                           borderRadius: '4px 4px 0 0'
                         }}
-                        title={`${hora}: $${datos.total_ingresos.toFixed(2)}`}
+                        title={`${hora}: $${(datos.total_ingresos || 0).toFixed(2)}`}
                       ></div>
                       <small>{hora}</small>
                     </div>
@@ -283,15 +284,15 @@ const ReportesVentasAvanzado = () => {
           <div style={styles.metricas}>
             <div style={styles.metrica}>
               <strong>Total Ventas</strong>
-              <p>{reporte.total_ventas}</p>
+              <p>{reporte.total_ventas || 0}</p>
             </div>
             <div style={styles.metrica}>
               <strong>Total Ingresos</strong>
-              <p>${reporte.total_ingresos.toFixed(2)}</p>
+              <p>${(reporte.total_ingresos || 0).toFixed(2)}</p>
             </div>
             <div style={styles.metrica}>
               <strong>Promedio Diario</strong>
-              <p>${(reporte.total_ingresos / (reporte.dias.length || 1)).toFixed(2)}</p>
+              <p>${((reporte.total_ingresos || 0) / (reporte.dias?.length || 1)).toFixed(2)}</p>
             </div>
           </div>
 
@@ -308,23 +309,23 @@ const ReportesVentasAvanzado = () => {
                 </tr>
               </thead>
               <tbody>
-                {reporte.dias.map(([dia, datos]) => (
+                {(reporte.dias || []).map(([dia, datos]) => (
                   <tr key={dia}>
                     <td>{dia}</td>
-                    <td>{datos.cantidad_ventas}</td>
-                    <td>${datos.total_ingresos.toFixed(2)}</td>
-                    <td>${datos.total_descuentos.toFixed(2)}</td>
-                    <td>${datos.ticket_promedio.toFixed(2)}</td>
+                    <td>{datos.cantidad_ventas || 0}</td>
+                    <td>${(datos.total_ingresos || 0).toFixed(2)}</td>
+                    <td>${(datos.total_descuentos || 0).toFixed(2)}</td>
+                    <td>${(datos.ticket_promedio || 0).toFixed(2)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
 
-          {reporte.dias.length > 0 && (
+          {(reporte.dias || []).length > 0 && (
             <div style={styles.tabla}>
               <h3>Productos Más Vendidos</h3>
-              {reporte.dias.map(([dia, datos]) => (
+              {(reporte.dias || []).map(([dia, datos]) => (
                 <div key={dia} style={{ marginBottom: '20px' }}>
                   <h4>{dia}</h4>
                   <table style={{ width: '100%', fontSize: '0.9em' }}>
@@ -335,12 +336,12 @@ const ReportesVentasAvanzado = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {Object.entries(datos.productos_mas_vendidos)
-                        .sort((a, b) => b[1] - a[1])
+                      {Object.entries(datos.productos_mas_vendidos || {})
+                        .sort((a, b) => (b[1] || 0) - (a[1] || 0))
                         .map(([nombre, cantidad]) => (
                           <tr key={nombre}>
                             <td>{nombre}</td>
-                            <td>{cantidad}</td>
+                            <td>{cantidad || 0}</td>
                           </tr>
                         ))}
                     </tbody>
@@ -357,28 +358,33 @@ const ReportesVentasAvanzado = () => {
         <div style={styles.reporteSection}>
           <h2>Reporte Detallado de {fechaInicio} a {fechaFin}</h2>
 
-          <div style={styles.metricas}>
-            <div style={styles.metrica}>
-              <strong>Cantidad de Ventas</strong>
-              <p>{reporte.resumen.cantidad_ventas}</p>
-            </div>
-            <div style={styles.metrica}>
-              <strong>Total Ingresos</strong>
-              <p>${reporte.resumen.total_ingresos.toFixed(2)}</p>
-            </div>
-            <div style={styles.metrica}>
-              <strong>Total Descuentos</strong>
-              <p>${reporte.resumen.total_descuentos.toFixed(2)}</p>
-            </div>
-            <div style={styles.metrica}>
-              <strong>Total IVA</strong>
-              <p>${reporte.resumen.total_iva.toFixed(2)}</p>
-            </div>
-            <div style={styles.metrica}>
-              <strong>Ticket Promedio</strong>
-              <p>${reporte.resumen.ticket_promedio.toFixed(2)}</p>
-            </div>
-          </div>
+          {(() => {
+            const resumen = reporte.resumen || {};
+            return (
+              <div style={styles.metricas}>
+                <div style={styles.metrica}>
+                  <strong>Cantidad de Ventas</strong>
+                  <p>{resumen.cantidad_ventas || 0}</p>
+                </div>
+                <div style={styles.metrica}>
+                  <strong>Total Ingresos</strong>
+                  <p>${(resumen.total_ingresos || 0).toFixed(2)}</p>
+                </div>
+                <div style={styles.metrica}>
+                  <strong>Total Descuentos</strong>
+                  <p>${(resumen.total_descuentos || 0).toFixed(2)}</p>
+                </div>
+                <div style={styles.metrica}>
+                  <strong>Total IVA</strong>
+                  <p>${(resumen.total_iva || 0).toFixed(2)}</p>
+                </div>
+                <div style={styles.metrica}>
+                  <strong>Ticket Promedio</strong>
+                  <p>${(resumen.ticket_promedio || 0).toFixed(2)}</p>
+                </div>
+              </div>
+            );
+          })()}
 
           {reporte.productos && Object.keys(reporte.productos).length > 0 && (
             <div style={styles.tabla}>
@@ -393,12 +399,12 @@ const ReportesVentasAvanzado = () => {
                 </thead>
                 <tbody>
                   {Object.entries(reporte.productos)
-                    .sort((a, b) => b[1].ingresos - a[1].ingresos)
+                    .sort((a, b) => (b[1].ingresos || 0) - (a[1].ingresos || 0))
                     .map(([nombre, datos]) => (
                       <tr key={nombre}>
                         <td>{nombre}</td>
-                        <td>{datos.cantidad}</td>
-                        <td>${datos.ingresos.toFixed(2)}</td>
+                        <td>{datos.cantidad || 0}</td>
+                        <td>${(datos.ingresos || 0).toFixed(2)}</td>
                       </tr>
                     ))}
                 </tbody>
@@ -421,15 +427,15 @@ const ReportesVentasAvanzado = () => {
                 </thead>
                 <tbody>
                   {Object.entries(reporte.recetas)
-                    .sort((a, b) => b[1].ingresos - a[1].ingresos)
+                    .sort((a, b) => (b[1].ingresos || 0) - (a[1].ingresos || 0))
                     .map(([nombre, datos]) => {
-                      const utilidad = datos.ingresos - datos.costo;
+                      const utilidad = (datos.ingresos || 0) - (datos.costo || 0);
                       return (
                         <tr key={nombre}>
                           <td>{nombre}</td>
-                          <td>{datos.cantidad}</td>
-                          <td>${datos.ingresos.toFixed(2)}</td>
-                          <td>${datos.costo.toFixed(2)}</td>
+                          <td>{datos.cantidad || 0}</td>
+                          <td>${(datos.ingresos || 0).toFixed(2)}</td>
+                          <td>${(datos.costo || 0).toFixed(2)}</td>
                           <td style={{ color: utilidad > 0 ? 'green' : 'red' }}>
                             ${utilidad.toFixed(2)}
                           </td>
@@ -460,8 +466,8 @@ const ReportesVentasAvanzado = () => {
                       <td>{venta.id}</td>
                       <td>{new Date(venta.fecha).toLocaleString()}</td>
                       <td>{venta.cliente || 'N/A'}</td>
-                      <td>{venta.items_count}</td>
-                      <td>${venta.total.toFixed(2)}</td>
+                      <td>{venta.items_count || 0}</td>
+                      <td>${(venta.total || 0).toFixed(2)}</td>
                     </tr>
                   ))}
                 </tbody>

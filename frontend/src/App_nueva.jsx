@@ -9,6 +9,9 @@ import RecetaForm from './pages/RecetaForm';
 import IngredientesPage from './pages/IngredientesPage';
 import VentasPageMejorada from './pages/VentasPageMejorada';
 import ReportesVentasAvanzado from './pages/ReportesVentasAvanzado';
+import AdminUsuariosPage from './pages/AdminUsuariosPage';
+import InventarioPage from './pages/InventarioPage';
+import HistorialVentasPage from './pages/HistorialVentasPage';
 
 // Componente de ruta protegida
 function ProtectedRoute({ element }) {
@@ -69,6 +72,18 @@ export default function App() {
         <Route
           path="/reportes-ventas"
           element={<ProtectedRoute element={<ReportesVentasAvanzado />} />}
+        />
+        <Route
+          path="/admin/usuarios"
+          element={<ProtectedRoute element={<AdminUsuariosPage />} />}
+        />
+        <Route
+          path="/inventario"
+          element={<ProtectedRoute element={<InventarioPage />} />}
+        />
+        <Route
+          path="/ventas/historial"
+          element={<ProtectedRoute element={<HistorialVentasPage />} />}
         />
 
         {/* Redirección por defecto */}
